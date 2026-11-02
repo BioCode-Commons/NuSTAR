@@ -1,0 +1,3 @@
+HTSlib snapshot bundled with STAR 2.7.11b. The source adjustments are explicit unistd.h includes in hts.c and cram/cram_io.c for modern C compilers; copyright and permissive license notices are in the individual source files. NuSTAR uses the SAM/BAM reader and BGZF codec, not STAR alignment code. CRAM/VCF objects are internal link dependencies of this snapshot; they are not NuSTAR input formats.
+
+In sam.c, the SAM parser writes packed CIGAR words with memcpy; CIGAR length calculations and SAM formatting read packed words and numeric auxiliaries with memcpy. This removes alignment UB without changing BAM values or byte layout. No alignment sanitizer is disabled.

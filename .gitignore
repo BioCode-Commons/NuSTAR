@@ -1,0 +1,8 @@
+# Build directories
+build/
+# Hidden files and directories
+.*
+
+# Python cache
+__pycache__/
+*.pyc

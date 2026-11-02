@@ -1,0 +1,4 @@
+chrA	probe	exon	101	180	.	+	.	gene_id "g1"; transcript_id "t1";
+chrA	probe	exon	301	380	.	+	.	gene_id "g1"; transcript_id "t1";
+chrB	probe	exon	150	220	.	-	.	gene_id "g2"; transcript_id "t2";
+chrB	probe	exon	350	420	.	-	.	gene_id "g2"; transcript_id "t2";

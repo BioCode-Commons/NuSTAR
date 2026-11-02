@@ -1,0 +1,12 @@
+{
+  "version": "2.12.1",
+  "url": "https://codeload.github.com/IlyaGrebnov/libsais/tar.gz/refs/tags/v2.12.1",
+  "archive_sha256": "d3779d60976f1e7112c1cba711250a88b731d3c5e0611592cafb8954c71b32e5",
+  "files": {
+    "libsais.LICENSE": "e4abf9cd071e2e784ff04751fdf566ec4f1fe339bbef8bdcf6f56133f609a516",
+    "libsais.h": "a18b46efcd632491acfcc696606b5455a6c8cc0b014ebd67ae29cfabba20774a",
+    "libsais64.h": "3798e288e124036e43edeb0cdb27fe6bffa4eb8d71b6cf805c41f799e20965d2",
+    "libsais.c": "aa84f63278f7cb401196a1a795c03d4d96be8b571d72b6b0901425e781ad1508",
+    "libsais64.c": "088019c5fc5648284291f96657d0cfd2c3c9bf53a4d12514773fdab7f3e452bf"
+  }
+}
