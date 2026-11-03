@@ -1,8 +1,19 @@
 # NuSTAR
 
-NuSTAR is an RNA-seq aligner built around STAR 2.7.11b's alignment and counting rules. The code separates input, seed search, windows, stitching, output, and single-cell counting into modules. It runs its own pipeline; it does not launch STAR to align reads.
+**NuSTAR is a refactored implementation of STAR, a widely used RNA-seq aligner.** Using AI-assisted development, we have refactored and improved STAR’s implementation to support its continued maintenance. We thank Dr. Alexander Dobin and the STAR contributors for their work and contributions to the community over the past decade.
 
-This is still a partial implementation of STAR. Use the options below rather than assuming every STAR command will work. The [code guide](CODE_STRUCTURE.md) explains where the work happens. [Validation notes](docs/VALIDATION.md) explain how we compare results. [Runtime and correctness](docs/STAR_COMPARISON.md) compares the measured workloads with STAR and lists the remaining gaps. The [full-data tests](docs/DATA_FEATURE_VALIDATION.md) include real PBMC Solo results. The [junction-padding fix](docs/JUNCTION_PADDING_FIX.md) covers the completed full human two-pass run and the remaining runtime gap.
+Although AI was used during development, we have conducted comprehensive human code reviews and testing to verify that NuSTAR produces the same outputs as the original STAR for the workflows tested. For supported workflows, NuSTAR is designed to preserve STAR’s user-facing interface and behavior.
+
+NuSTAR does not yet support all STAR features. Currently supported workflows include **bulk RNA-seq** alignment in both one-pass and two-pass modes, as well as single-cell RNA-seq analysis with **STARsolo**. Advanced analysis, such as XXX and XXX Chimeric are Not supported yet. This is still a partial implementation of STAR. Use the options below rather than assuming every STAR command will work. The [code guide](CODE_STRUCTURE.md) explains where the work happens. [Validation notes](docs/VALIDATION.md) explain how we compare results. [Runtime and correctness](docs/STAR_COMPARISON.md) compares the measured workloads with STAR and lists the remaining gaps. The [full-data tests](docs/DATA_FEATURE_VALIDATION.md) include real PBMC Solo results. The [junction-padding fix](docs/JUNCTION_PADDING_FIX.md) covers the completed full human two-pass run and the remaining runtime gap.
+
+**NuSTAR builds on the algorithms and methods introduced in STAR. We therefore recommend that all users cite the original STAR publication:**
+
+Dobin, Alexander, et al. *STAR: ultrafast universal RNA-seq aligner.* Bioinformatics 29.1 (2013): 15–21.
+
+The original STAR repository is available at [https://github.com/alexdobin/STAR](https://github.com/alexdobin/STAR).
+
+Questions about STAR are also welcome in this repository. Having studied STAR’s source code in detail, we will do our best to answer them.
+
 
 ## Build
 
