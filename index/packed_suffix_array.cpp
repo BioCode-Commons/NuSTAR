@@ -131,6 +131,12 @@ PackedSuffixArray PackedSuffixArray::lazyZeroed(std::size_t count,std::uint8_t w
     result.data_=result.lazy_bytes_.get();
     return result;
 }
+PackedSuffixArray::RangeWriter PackedSuffixArray::rangeWriter(std::size_t first_rank) {
+    if (mapped_owner_ || first_rank%64 != 0 || first_rank > count_)
+        throw std::invalid_argument("packed range writer needs owned storage and a 64-aligned rank");
+    return RangeWriter(const_cast<std::uint8_t*>(data_)+first_rank*width_/8, width_);
+}
+
 void PackedSuffixArray::discardReadPages(std::size_t first,std::size_t past) const {
 #if defined(__unix__)
     if(!file_mapping_) return;
