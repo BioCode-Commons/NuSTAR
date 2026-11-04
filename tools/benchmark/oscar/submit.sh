@@ -4,10 +4,11 @@ set -euo pipefail
 root=${1:?new scratch campaign root required}
 budget=${2:?selected campaign disk budget in GiB required}
 harness=$(cd -- "$(dirname -- "$0")" && pwd)
-scratch=$(realpath "$HOME/scratch")
+scratch=$(realpath "${3:?explicit temporary-storage base required}")
 root=$(realpath -m "$root")
 [[ "$root" == "$scratch/"* ]]
 [[ ! -e "$root" ]]
+[[ -O "$scratch" && -w "$scratch" ]]
 [[ "$budget" =~ ^[1-9][0-9]*$ ]]
 command -v samtools
 command -v sbatch

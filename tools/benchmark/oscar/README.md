@@ -1,6 +1,6 @@
 # NuSTAR / STAR benchmark on Oscar
 
-The campaign is prepared locally. It has **not** run on Oscar. No result from the local integrity checks is a performance measurement.
+The campaign was submitted on November 4, 2026 as jobs 8361932, 8361933, and 8361934. Benchmark measurements have **not** started yet; the main job has started its build phase on node1848; full-data jobs wait for dependencies. No result from the local integrity checks is a performance measurement.
 
 ## Frozen inputs
 
@@ -31,7 +31,7 @@ Cases and arguments are in `suite.json`. Within every pair, both engines receive
 
 `submit.sh` submits three dependent `batch` jobs, each requesting **24 hours, one node, 32 CPUs, no SMT, and 192 GiB RAM**. Main includes preparation, builds, indexes, pilot, and main runs. Full bulk depends on main passing; full PBMC depends on full bulk passing. A failure cancels invalid downstream dependencies. Resources must first pass the actual account/partition checks; command-line submission options can be adjusted to the verified limits.
 
-All downloads, source/build trees, native indexes, uncompressed inputs, sorting runs, logs, and results belong under one scratch campaign directory. The harness itself is also transferred to scratch. `TMPDIR` is inside the campaign. Home holds no datasets or indexes.
+All downloads, source/build trees, native indexes, uncompressed inputs, sorting runs, logs, and results belong under one campaign directory on the selected temporary filesystem. The harness itself is also transferred to scratch. `TMPDIR` is inside the campaign. Home holds no datasets or indexes.
 
 Set `--disk-budget-gib` from the real remaining **user quota**, not filesystem free space alone. An illustrative 350 GiB campaign budget is not assumed to be available. The scripts check allocated campaign bytes and retain a 32 GiB filesystem free-space reserve. Download/preparation checks run during writes; an external-writer watchdog samples every two seconds and terminates a process that exceeds the selected campaign budget. This is a monitored budget, not a filesystem quota reservation.
 
@@ -48,8 +48,8 @@ Do not trigger Duo until local preparation is finished. For the actual run:
 
 1. Authenticate once with a dedicated SSH master, for example `ControlMaster=auto`, `ControlPersist=7d`, and a task-specific socket. No password or Duo code is stored in the harness. Scheduler jobs continue independently of the SSH connection.
 2. Through that connection, inspect `checkquota`, `sinfo -p batch`, `scontrol show partition batch`, account/QOS limits, and available GCC/CMake/Python/samtools modules. Check that scratch resolves to its intended mount and that each 24-hour resource request is valid. These account-specific facts cannot be established offline.
-3. Load the selected toolchain, capture module versions, transfer this harness to scratch, and run `sbatch --test-only` with the final resources. Choose a campaign budget within the remaining user quota. Do not silently change the dataset or test matrix to fit missing resources.
-4. Run `bash submit.sh CAMPAIGN_ROOT DISK_BUDGET_GIB`, supplying the actual scratch path and chosen budget. The root must be new and below the resolved `~/scratch` directory. Submission IDs are saved immediately so partial submission cannot lose track of an accepted job.
+3. Load the selected toolchain, capture module versions, transfer this harness to scratch, and run `sbatch --test-only` with the final resources. Choose a campaign budget within the remaining user quota. On this account, ordinary scratch was already 483.79/512 GB used at preflight, so the experiment uses `/jobtmp/zliu328` (1 TiB soft quota, 295.8 GiB used) as its temporary storage. Do not silently change the dataset or test matrix to fit missing resources.
+4. Run `bash submit.sh CAMPAIGN_ROOT DISK_BUDGET_GIB STORAGE_BASE`, supplying the actual scratch path and chosen budget. The root must be new and below the explicit, owned temporary-storage base. Submission IDs are saved immediately so partial submission cannot lose track of an accepted job.
 5. Monitor with `bash status.sh CAMPAIGN_ROOT`. Use `sacct` for completed jobs and peak memory; inspect `results/*/status.json` and `logs/*` for progress/failures. Arrange a heartbeat against these concrete job IDs after submission, reporting meaningful transitions or action needed rather than every unchanged poll.
 
 No job is automatically resubmitted after a failed output comparison. Inspect the retained evidence, resolve the cause, and resume deliberately through the same authenticated connection while it remains valid.

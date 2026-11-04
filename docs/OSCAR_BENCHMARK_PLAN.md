@@ -1,12 +1,12 @@
 # Oscar benchmark plan
 
-Status: preparation only. No Oscar job has been submitted. The [campaign harness](../tools/benchmark/oscar/README.md), [frozen sources](../tools/benchmark/oscar/sources.json), and [case matrix](../tools/benchmark/oscar/suite.json) are now available. Complete local checks before requesting Brown/Duo authentication.
+Status: submitted on November 4, 2026. Job 8361932 covers preparation/pilot/main; 8361933 covers full bulk; 8361934 covers full PBMC, with after-success dependencies. No performance result is available yet. The [campaign harness](../tools/benchmark/oscar/README.md), [frozen sources](../tools/benchmark/oscar/sources.json), and [case matrix](../tools/benchmark/oscar/suite.json) are now available. Complete local checks before requesting Brown/Duo authentication.
 
 ## Runtime and storage
 
 Request the `batch` partition with an initial **24-hour walltime**, subject to its actual account and partition limits. This is a scheduler walltime request, not an SSH timeout. Once `sbatch` accepts a job, it does not require the SSH connection to remain open.
 
-Use an isolated directory under the account's actual Oscar scratch location for downloads, extracted FASTQs, both programs' indexes, build files, outputs, and temporary sorting runs. Discover that location and its quota after login; do not assume a path or write large files into home.
+Use an isolated directory under the account's verified Oscar temporary-storage location for downloads, extracted FASTQs, both programs' indexes, build files, outputs, and temporary sorting runs. Discover that location and its quota after login; do not assume a path or write large files into home.
 
 Before downloading or extracting a dataset:
 
@@ -72,3 +72,11 @@ Report the individual runs, median, range, and STAR/NuSTAR ratio. Separate input
 ## Execution package
 
 See the [campaign guide](../tools/benchmark/oscar/README.md) for the exact matrix, three dependent 24-hour jobs, capacity enforcement, cleanup rules, source revisions, and the one-login launch/monitor procedure. Local checks are not a substitute for the Oscar pilot.
+
+## Live preflight — November 4, 2026
+
+Ordinary scratch is 483.79/512 GB used. The campaign will use `/jobtmp/zliu328`, resolving to `/sss/jobtmp/zliu328`, rather than add hundreds of GB to that nearly full quota. Jobtmp reports 295.8 GiB used against a 1 TiB soft quota; the campaign budget is 350 GiB. No existing files are removed. The `batch` account/QOS accepts the planned 32 CPU, 192 GiB, 24-hour request; scheduler start estimates are not guaranteed. The loaded toolchain is GCC 15.1.0, CMake 3.31.8, Python 3.13.5 (selected by module dependencies), and samtools 1.19.2.
+
+## Submission and supervision
+
+Jobs `8361932`, `8361933`, and `8361934` were accepted in `batch`, each with 24-hour walltime, 32 CPUs, and 192 GiB RAM. The main job initially waited for scheduler priority, then started on node1848 and entered the build phase. Full-data jobs wait for successful dependencies. The experiment is at `/sss/jobtmp/zliu328/nustar-benchmark-20261104`. A thread heartbeat checks every 15 minutes through the authenticated SSH master, reports meaningful transitions or failures, and retrieves verified results.
