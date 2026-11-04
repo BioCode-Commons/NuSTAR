@@ -10,6 +10,12 @@ The earlier saved human-reference runs show NuSTAR finishing the smaller tested 
 
 The tables below summarize the earlier measurements; the full-data report referenced above contains the newer runs, but is not included in this checkout. The measurements cover several NuSTAR builds from the feature migration, Solo refactor, and BAM implementation. They are not all measurements of the current executable. Each run directory records its commands and binary hashes.
 
+## Dataset provenance correction
+
+The original report describes SRR21781765 as RNA-seq. On November 4, 2026, a check of [ENA run metadata](https://www.ebi.ac.uk/ena/browser/view/SRR21781765) returned `library_strategy=WXS` and `library_layout=PAIRED`. WXS is whole-exome sequencing, not RNA-seq. The original subset and its checksums are not included in this repository, so the actual input identity still needs to be reconciled; the accession may have been recorded incorrectly.
+
+The historical timings and output-comparison claims below are retained as recorded, but their description as a biological RNA-seq benchmark is unverified. They should not be used to support RNA-seq performance claims until input provenance is resolved. The [Oscar benchmark plan](OSCAR_BENCHMARK_PLAN.md) specifies separately identified RNA-seq inputs for new measurements.
+
 ## What “correctness” means here
 
 There are three different questions:
@@ -22,7 +28,7 @@ There are three different questions:
 
 ## Timed workloads
 
-The FASTQ workloads use one million single-end reads from the human SRR21781765 sample against the complete GRCh38 reference. They use the local `stratified-small.fastq` sample, not the full sequencing run. Solo adds synthetic cell barcodes and UMIs to those bulk RNA reads. This is useful for testing the implementation, but it is not a real single-cell experiment.
+The original report describes the FASTQ workloads as one million single-end reads from SRR21781765 against the complete GRCh38 reference; see the provenance correction above. They use the local `stratified-small.fastq` sample, not the full sequencing run. Solo adds synthetic cell barcodes and UMIs to that reported subset. This is useful for testing the implementation, but it is not a real single-cell experiment.
 
 Both programs ran on the same machine with 1 or 32 requested threads. The benchmark warmed the indexes and ran the programs serially under a benchmark lock. Each table entry is one process run. There are no error bars or repeated-run averages here.
 

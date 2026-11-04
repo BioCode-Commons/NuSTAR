@@ -90,12 +90,15 @@ More examples—including single-end, two-pass, 10x, SmartSeq, and SAM/BAM input
 
 The results below come from the repository's [runtime and correctness report](docs/STAR_COMPARISON.md). They are saved measurements from several NuSTAR builds, not a fresh benchmark of the current commit.
 
+> [!WARNING]
+> **Dataset provenance needs correction.** The saved report calls SRR21781765 RNA-seq, but [ENA metadata](https://www.ebi.ac.uk/ena/browser/view/SRR21781765) classifies it as paired-end WXS (whole-exome sequencing). The actual benchmark inputs and their checksums have not yet been reconciled with that accession. Treat the saved numbers as historical implementation measurements, not a verified RNA-seq benchmark. A [new Oscar benchmark plan](docs/OSCAR_BENCHMARK_PLAN.md) uses identified RNA-seq datasets.
+
 ### Datasets and test setup
 
 | Dataset | What was tested |
 | :--- | :--- |
-| **SRR21781765 subset** | One million single-end human RNA-seq reads, aligned to the complete GRCh38 reference. The subset is named `stratified-small.fastq` in the saved runs. |
-| **Synthetic Solo input** | The same bulk RNA reads with synthetic cell barcodes and UMIs. These runs test implementation behavior, not recovery of real cells. |
+| **SRR21781765 subset** | Reported as a one-million-read single-end subset aligned to GRCh38, named `stratified-small.fastq`. The cited accession is classified as paired-end WXS; the subset provenance remains unresolved. |
+| **Synthetic Solo input** | The same reported subset with synthetic cell barcodes and UMIs. These runs test implementation behavior, not recovery of real cells. |
 | **BAM remapping input** | 1,215,901 alignment records from a previous output BAM. NuSTAR reads BAM directly; STAR receives converted SAM through `readFilesCommand`. |
 | **Full-human two-pass run** | 535.7 million reads. Junction tables and non-time mapping statistics were compared; full alignment records were not compared. |
 | **Real PBMC v3 data** | The existing report states that raw/filtered matrices and summaries match. The supporting full-data report is not in this checkout, so this README does not add a dataset identifier or timing result. |
