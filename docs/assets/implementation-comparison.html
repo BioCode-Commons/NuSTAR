@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>NuSTAR — flows and implementation differences</title>
+<style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1160px;margin:24px auto;padding:0 20px}svg{display:block;width:100%;height:auto}nav{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 8px}button,select{font:inherit;color:inherit;background:#21262d;border:1px solid #3d444d;border-radius:6px;padding:8px 12px;cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid #58a6ff;outline-offset:3px}button[aria-pressed=true]{border-color:#58a6ff}#status{color:#9da7b3}p{padding:0 8px;color:#9da7b3}a{color:#79c0ff}[hidden]{display:none}body.capture main{max-width:none;margin:0;padding:0}body.capture nav,body.capture p{display:none}body.capture svg{width:1120px}</style>
+<main><nav aria-label="Figures"><button type="button" id="show-flow" aria-pressed="true">End-to-end flows</button><button type="button" id="show-diff" aria-pressed="false">Implementation differences</button></nav><section id="flow-panel"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1138" viewBox="0 0 1120 1138" role="img" aria-labelledby="flow-title flow-desc">
+<title id="flow-title">STAR and NuSTAR: end-to-end flow and processing boundaries</title>
+<desc id="flow-desc">STAR and NuSTAR: end-to-end flow and processing boundaries. Source revisions: STAR 2.7.11b and NuSTAR fa16481.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:19px;fill:#e6edf3}
+.title{font-size:31px;font-weight:600}.heading{font-size:22px;font-weight:600}
+.mono{font-family:Menlo,Consolas,monospace;font-size:17px}.small{font-size:16px}
+.muted{fill:#9da7b3}.green{fill:#7ee787}.blue{fill:#79c0ff}.amber{fill:#e3b341}
+.eyebrow{font-size:15px;letter-spacing:1.6px;fill:#9da7b3}.nodeLabel{font-size:19px;font-weight:600}
+</style>
+<rect x="0" y="0" width="1120" height="1138" rx="14" fill="#0d1117" />
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#6e7681"/></marker></defs>
+<text x="32" y="37" class="eyebrow">01 / END-TO-END FLOW</text>
+<text x="32" y="80" class="title">The same alignment strategy, with explicit stage boundaries.</text>
+<text x="32" y="111" class="small muted">Standard spliced alignment; the NuSTAR lane expands its normal single-end pipeline.</text>
+<text x="66" y="153" class="heading">STAR 2.7.11b</text>
+<text x="622" y="153" class="heading green">NuSTAR</text>
+<rect x="94" y="173" width="408" height="96" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="198" class="nodeLabel" text-anchor="middle">Build or load the reference index</text>
+<text x="298.0" y="222" class="small muted" text-anchor="middle">Prefix chunks → qsort → packed suffix array</text>
+<text x="298.0" y="245" class="small muted" text-anchor="middle">Genome / SA / SAindex</text>
+<path d="M298 269V319" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="173" width="408" height="96" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="198" class="nodeLabel" text-anchor="middle">Build or load the native index</text>
+<text x="854.0" y="222" class="small muted" text-anchor="middle">libsais64 → STAR rank normalization → pack</text>
+<text x="854.0" y="245" class="small muted" text-anchor="middle">reference.bin / index.sa</text>
+<path d="M854 269V319" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="52" y="301" class="eyebrow">WORKER / CHUNK LOOP</text>
+<text x="608" y="301" class="eyebrow">WORKER / NUMBERED BATCH LOOP</text>
+<rect x="94" y="320" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="345" class="nodeLabel" text-anchor="middle">Read next chunk</text>
+<text x="298.0" y="369" class="small muted" text-anchor="middle">Input mutex protects shared streams</text>
+<path d="M298 390V408" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="408" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="433" class="nodeLabel" text-anchor="middle">Prepare the next read</text>
+<text x="298.0" y="457" class="small muted" text-anchor="middle">ReadAlign::oneRead()</text>
+<path d="M298 478V496" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="496" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="521" class="nodeLabel" text-anchor="middle">Find mappable seeds</text>
+<text x="298.0" y="545" class="small muted" text-anchor="middle">mapOneRead() updates ReadAlign arrays</text>
+<path d="M298 566V584" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="584" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="609" class="nodeLabel" text-anchor="middle">Build windows and stitch</text>
+<text x="298.0" y="633" class="small muted" text-anchor="middle">stitchPieces() → stitchWindowAligns()</text>
+<path d="M298 654V672" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="672" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="697" class="nodeLabel" text-anchor="middle">Select, filter, and emit</text>
+<text x="298.0" y="721" class="small muted" text-anchor="middle">multMapSelect → mappedFilter → output</text>
+<path d="M298 742V760" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="760" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="785" class="nodeLabel" text-anchor="middle">Finish chunk output</text>
+<text x="298.0" y="809" class="small muted" text-anchor="middle">Chunk buffers / per-worker statistics</text>
+<path d="M94 707H72V443H94" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="62" y="575" class="small muted" text-anchor="middle" transform="rotate(-90 62 575)">next read</text>
+<path d="M94 795H40V355H94" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="28" y="575" class="small muted" text-anchor="middle" transform="rotate(-90 28 575)">next chunk</text>
+<path d="M298 830V882" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="94" y="882" width="408" height="70" rx="8" fill="#1c212b" stroke="#303b4c" />
+<text x="298.0" y="907" class="nodeLabel" text-anchor="middle">After mapping</text>
+<text x="298.0" y="931" class="small muted" text-anchor="middle">Solo reduction*, then sorted BAM*</text>
+<rect x="650" y="320" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="345" class="nodeLabel" text-anchor="middle">Read next numbered batch</text>
+<text x="854.0" y="369" class="small muted" text-anchor="middle">Input mutex; reuse worker workspace</text>
+<path d="M854 390V408" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="408" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="433" class="nodeLabel" text-anchor="middle">Prepare the next fragment</text>
+<text x="854.0" y="457" class="small muted" text-anchor="middle">prepareSingleFastq()</text>
+<path d="M854 478V496" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="496" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="521" class="nodeLabel" text-anchor="middle">Seed search → SeedBatch</text>
+<text x="854.0" y="545" class="small muted" text-anchor="middle">seed.find(read, workspace, seeds)</text>
+<path d="M854 566V584" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="584" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="609" class="nodeLabel" text-anchor="middle">WindowBatch → CandidateSet</text>
+<text x="854.0" y="633" class="small muted" text-anchor="middle">window.build() → stitchSingle()</text>
+<path d="M854 654V672" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="672" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="697" class="nodeLabel" text-anchor="middle">Selection → FragmentEffects</text>
+<text x="854.0" y="721" class="small muted" text-anchor="middle">filter / project / Solo record* / encode</text>
+<path d="M854 742V760" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="760" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="785" class="nodeLabel" text-anchor="middle">Commit batches in input order</text>
+<text x="854.0" y="809" class="small muted" text-anchor="middle">Drain by batch ID; reduce junctions / stats</text>
+<path d="M650 707H628V443H650" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="618" y="575" class="small muted" text-anchor="middle" transform="rotate(-90 618 575)">next fragment</text>
+<path d="M650 795H596V355H650" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="584" y="575" class="small muted" text-anchor="middle" transform="rotate(-90 584 575)">next batch</text>
+<path d="M854 830V882" fill="none" stroke="#6e7681" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="650" y="882" width="408" height="70" rx="8" fill="#12251f" stroke="#3a4c48" />
+<text x="854.0" y="907" class="nodeLabel" text-anchor="middle">After mapping</text>
+<text x="854.0" y="931" class="small muted" text-anchor="middle">Solo reduction*, then sorted BAM*</text>
+<rect x="32" y="978" width="1056" height="68" rx="8" fill="#152032" />
+<text x="50" y="1006" class="">Two-pass mode: discover junctions → extend index → reread input for pass two</text>
+<text x="50" y="1031" class="small muted">Both versions use this strategy; each pass uses the read-mapping stages above.</text>
+<text x="32" y="1080" class="small muted">* Optional. Profiling paths, error exits, and unsupported STAR features are omitted.</text>
+<text x="32" y="1107" class="small muted">Both implementations already process reads in worker-owned chunks; NuSTAR makes stage data explicit.</text>
+</svg></section><section id="diff-panel" hidden><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1160" viewBox="0 0 1120 1160" role="img" aria-labelledby="differences-title differences-desc">
+<title id="differences-title">Four source-level implementation differences between STAR and NuSTAR</title>
+<desc id="differences-desc">Four source-level implementation differences between STAR and NuSTAR. Source revisions: STAR 2.7.11b and NuSTAR fa16481.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:19px;fill:#e6edf3}
+.title{font-size:31px;font-weight:600}.heading{font-size:22px;font-weight:600}
+.mono{font-family:Menlo,Consolas,monospace;font-size:17px}.small{font-size:16px}
+.muted{fill:#9da7b3}.green{fill:#7ee787}.blue{fill:#79c0ff}.amber{fill:#e3b341}
+.eyebrow{font-size:15px;letter-spacing:1.6px;fill:#9da7b3}.nodeLabel{font-size:19px;font-weight:600}
+</style>
+<rect x="0" y="0" width="1120" height="1160" rx="14" fill="#0d1117" />
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#6e7681"/></marker></defs>
+<text x="32" y="37" class="eyebrow">02 / IMPLEMENTATION DIFFERENCES</text>
+<text x="32" y="80" class="title">What actually changed inside the pipeline.</text>
+<text x="32" y="111" class="small muted">Abbreviated code and control flow; source links point to the compared revisions.</text>
+<g id="difference-0" data-difference="0">
+<rect x="24" y="140" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="170" class="heading">@@ 01  Suffix-array construction @@</text>
+<text x="44" y="195" class="small muted">sorting algorithm + compatibility repair</text>
+<rect x="25" y="207" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="207" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="231" class="mono">− for each prefix-range chunk:</text>
+<text x="45" y="256" class="mono">−   qsort(..., funCompareSuffixes)</text>
+<text x="45" y="281" class="mono">−   write SA_i to disk</text>
+<text x="45" y="306" class="mono">− reload chunks → pack SA</text>
+<text x="578" y="231" class="mono green">+ libsais64(...) / libsais64_omp(...)</text>
+<text x="578" y="256" class="mono green">+ filter non-base suffix starts</text>
+<text x="578" y="281" class="mono green">+ normalize STAR-equal suffix groups</text>
+<text x="578" y="306" class="mono green">+ build prefix ranges → pack SA</text>
+<text x="44" y="343" class="small muted">Induced sorting supplies the initial order; std::sort still orders STAR-equal groups.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/Genome_genomeGenerate.cpp#L213-L325" target="_blank">
+<text x="882" y="169" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/index/suffix_array_index.cpp#L271-L291" target="_blank">
+<text x="984" y="169" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-1" data-difference="1">
+<rect x="24" y="376" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="406" class="heading">@@ 02  Per-read window reset @@</text>
+<text x="44" y="431" class="small muted">full-array clearing → touched-bin log</text>
+<rect x="25" y="443" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="443" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="467" class="mono">− memset(winBin[0], 255, full_size)</text>
+<text x="45" y="492" class="mono">− memset(winBin[1], 255, full_size)</text>
+<text x="45" y="517" class="mono">− then scan seed hits / build windows</text>
+<text x="578" y="467" class="mono green">+ setBin(): log bins on first mutation</text>
+<text x="578" y="492" class="mono green">+ for (bin : touched_bins[strand])</text>
+<text x="578" y="517" class="mono green">+   bin_to_window[strand][bin] = no_window</text>
+<text x="578" y="542" class="mono green">+ clear the touched-bin log</text>
+<text x="44" y="579" class="small muted">The bin table stays allocated. Reset work follows touched bins instead of the full table.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_stitchPieces.cpp#L12-L16" target="_blank">
+<text x="882" y="405" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/window/star_window.cpp#L39-L57" target="_blank">
+<text x="984" y="405" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-2" data-difference="2">
+<rect x="24" y="612" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="642" class="heading">@@ 03  Read loop and intermediate state @@</text>
+<text x="44" y="667" class="small muted">shared object fields → explicit stage results</text>
+<rect x="25" y="679" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="679" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="703" class="mono">− oneRead() → mapOneRead()</text>
+<text x="45" y="728" class="mono">− ReadAlign fields: PC / WC / WA / trAll</text>
+<text x="45" y="753" class="mono">− stitchPieces() builds + stitches windows</text>
+<text x="45" y="778" class="mono">− multMapSelect() → outputAlignments()</text>
+<text x="578" y="703" class="mono green">+ seed.find() → SeedBatch</text>
+<text x="578" y="728" class="mono green">+ window.build() → WindowBatch</text>
+<text x="578" y="753" class="mono green">+ stitchSingle() → CandidateSet</text>
+<text x="578" y="778" class="mono green">+ select / filter / project → effects</text>
+<text x="44" y="815" class="small muted">The recursive stitching kernel is retained. The change is its interface and ownership.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_mapOneRead.cpp#L34-L118" target="_blank">
+<text x="882" y="641" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/pipeline/single_end/mapping_composition.cpp#L72-L98" target="_blank">
+<text x="984" y="641" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-3" data-difference="3">
+<rect x="24" y="848" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="878" class="heading">@@ 04  Coordinate-sorted BAM @@</text>
+<text x="44" y="903" class="small muted">coordinate bins → external merge runs</text>
+<rect x="25" y="915" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="915" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="939" class="mono">− write per-worker coordinate-bin files</text>
+<text x="45" y="964" class="mono">− load one bin; qsort(startPos)</text>
+<text x="45" y="989" class="mono">− write each sorted bin</text>
+<text x="45" y="1014" class="mono">− bam_cat() concatenates bins in order</text>
+<text x="578" y="939" class="mono green">+ buffer records; std::sort by key</text>
+<text x="578" y="964" class="mono green">+ spill sorted runs to disk</text>
+<text x="578" y="989" class="mono green">+ priority_queue → k-way merge</text>
+<text x="578" y="1014" class="mono green">+ merge fan-in ≤ 64; repeat as needed</text>
+<text x="44" y="1051" class="small muted">Small outputs stay in memory. The sort budget does not cap total process memory.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/BAMbinSortByCoordinate.cpp#L12-L52" target="_blank">
+<text x="882" y="877" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/bam/sink.cpp#L86-L121" target="_blank">
+<text x="984" y="877" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-focus" opacity="0"><rect x="25" y="140" width="1070" height="220" rx="8" fill="none" stroke="#58a6ff" stroke-width="2"/><rect x="25" y="140" width="4" height="220" rx="0" fill="#58a6ff" /></g>
+<circle id="difference-travel" cx="543" cy="263" r="4" fill="#79c0ff" opacity="0"/>
+<text x="32" y="1122" class="small muted">Source changes explain mechanisms. They do not measure the speedup of an individual stage.</text>
+</svg></section><nav id="walkthrough" aria-label="Difference walkthrough" hidden><button id="play" type="button">Play walkthrough</button><label for="selection">Focus</label><select id="selection"><option value="-1">All four differences</option><option value="0">Suffix-array construction</option><option value="1">Per-read window reset</option><option value="2">Read loop and intermediate state</option><option value="3">Coordinate-sorted BAM</option></select><span id="status" role="status" aria-live="polite">All four differences visible</span></nav><p>Source-backed descriptions and comparison scope: <a href="../IMPLEMENTATION_COMPARISON.md">implementation comparison</a>. Animation order has no timing scale.</p></main>
+<script>
+const titles=["Suffix-array construction", "Per-read window reset", "Read loop and intermediate state", "Coordinate-sorted BAM"];
+const flowPanel=document.getElementById('flow-panel');
+const diffPanel=document.getElementById('diff-panel');
+const flowButton=document.getElementById('show-flow');
+const diffButton=document.getElementById('show-diff');
+const controls=document.getElementById('walkthrough');
+const focus=document.getElementById('difference-focus');
+const travel=document.getElementById('difference-travel');
+const selection=document.getElementById('selection');
+const status=document.getElementById('status');
+const play=document.getElementById('play');
+let animation;
+let playing=false;
+function stop(){cancelAnimationFrame(animation);playing=false;play.textContent='Play walkthrough'}
+function choose(index,progress=0.5){
+ const valid=index>=0&&index<titles.length;
+ focus.setAttribute('opacity',Number(valid));
+ focus.setAttribute('transform',`translate(0 ${Math.max(0,index)*236})`);
+ travel.setAttribute('opacity',Number(valid));
+ travel.setAttribute('cx',543+34*progress);
+ travel.setAttribute('cy',263+Math.max(0,index)*236);
+}
+function show(mode){stop();const isFlow=mode==='flow';flowPanel.hidden=!isFlow;diffPanel.hidden=isFlow;controls.hidden=isFlow;flowButton.setAttribute('aria-pressed',String(isFlow));diffButton.setAttribute('aria-pressed',String(!isFlow))}
+function renderAt(time){
+ const index=Math.floor(time/2400),p=(time%2400)/2400;
+ choose(index,p);
+ const f=Math.min(1,p/0.15),smooth=f*f*(3-2*f),row=Math.max(0,index-1+smooth);
+ focus.setAttribute('transform',`translate(0 ${row*236})`);
+ travel.setAttribute('cy',263+row*236);
+ return index;
+}
+window.renderAt=renderAt;
+window.showFigure=show;
+function run(){
+ stop();playing=true;play.textContent='Stop walkthrough';selection.value='-1';let start;
+ function frame(now){start??=now;const i=renderAt(now-start);if(i<titles.length){status.textContent=titles[i];animation=requestAnimationFrame(frame)}else{stop();choose(-1);status.textContent='All four differences visible'}}
+ animation=requestAnimationFrame(frame);
+}
+flowButton.addEventListener('click',()=>show('flow'));
+diffButton.addEventListener('click',()=>show('diff'));
+play.addEventListener('click',()=>playing?stop():run());
+selection.addEventListener('change',()=>{stop();const i=Number(selection.value);choose(i);status.textContent=i<0?'All four differences visible':titles[i]});
+const params=new URLSearchParams(location.search);
+show(params.get('figure')||'flow');
+if(params.has('capture'))document.body.classList.add('capture');
+window.captureReady=true;
+</script></html>

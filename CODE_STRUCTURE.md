@@ -37,9 +37,11 @@ The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeli
 
 ## Index and annotation
 
+For the old/new flow and specific sorting, reset, state-ownership, and BAM differences, see [the source comparison](docs/IMPLEMENTATION_COMPARISON.md).
+
 [cli/genome_generate.cpp](cli/genome_generate.cpp) coordinates index building. [reference/genome.cpp](reference/genome.cpp) owns the reference representation. [annotation/gtf_loader.cpp](annotation/gtf_loader.cpp) reads genes, transcripts, and exons; [annotation/junction_database.cpp](annotation/junction_database.cpp) builds the annotated junction data.
 
-The suffix array is built through [index/sais.cpp](index/sais.cpp), which calls the bundled libsais library. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
+The default production suffix-array build calls bundled libsais through [index/wide_suffix_array.cpp](index/wide_suffix_array.cpp), selected by [index/suffix_array_index.cpp](index/suffix_array_index.cpp). The separate [index/sais.cpp](index/sais.cpp) implementation serves the 32-bit builder interface. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
 
 [index/suffix_array_index.cpp](index/suffix_array_index.cpp) loads and saves the native index. [index/backend.hpp](index/backend.hpp) is the interface used by mapping code. The index representation stays behind that interface so seed search does not need to know how files were opened.
 
@@ -97,4 +99,4 @@ Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes
 | [tests/](tests/) | Unit tests, module-boundary checks, and comparisons against STAR. |
 | [third_party/](third_party/) | libsais, HTSlib, and other imported code with their licenses. |
 
-For a change to seed search, start with its stage test and then compare full alignments. For a change to counting, compare matrices as well as BAM tags. Equal final record counts alone can hide different alignments or gene assignments. [docs/VALIDATION.md](docs/VALIDATION.md) lists the test entry points.
+For a change to seed search, start with its stage test and then compare full alignments. For a change to counting, compare matrices as well as BAM tags. Equal final record counts alone can hide different alignments or gene assignments. [CONTRIBUTING.md](CONTRIBUTING.md#tests) lists the available test entry points and configuration.

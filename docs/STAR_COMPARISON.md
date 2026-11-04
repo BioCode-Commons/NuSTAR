@@ -1,10 +1,14 @@
 # NuSTAR and STAR: runtime and correctness
 
-**Latest full-human result:** after the [junction-padding fix](JUNCTION_PADDING_FIX.md), NuSTAR completes both passes on all 535.7 million reads. Both passes' junction tables and non-time mapping statistics match STAR. Whole-process time is 1906.23 seconds for NuSTAR versus the saved STAR baseline of 1598.68 seconds: NuSTAR is 19.2% slower. Peak RSS is 40.73 versus 49.49 GiB. The [earlier full-data report](DATA_FEATURE_VALIDATION.md) retains the failure that led to this fix and the real PBMC Solo baseline. These are single runs, and STAR's full-human result was reused rather than rerun alongside the repair.
+[Back to the README](../readme.md#benchmarks) · [Run the tests](../CONTRIBUTING.md#tests)
+
+> These are previously recorded results, not a fresh run of the current commit. CPU, RAM, operating-system, storage, and compiler/build details still need to be supplied; see the [benchmark machine table](../readme.md#datasets-and-test-setup). The supporting `VALIDATION.md`, `DATA_FEATURE_VALIDATION.md`, and `JUNCTION_PADDING_FIX.md` reports and the generated `build/` artifacts are not included in this checkout. Missing evidence paths are retained below as text, not download links.
+
+**Latest full-human result:** after the junction-padding fix (`JUNCTION_PADDING_FIX.md`), NuSTAR completes both passes on all 535.7 million reads. Both passes' junction tables and non-time mapping statistics match STAR. Whole-process time is 1906.23 seconds for NuSTAR versus the saved STAR baseline of 1598.68 seconds: NuSTAR is 19.2% slower. Peak RSS is 40.73 versus 49.49 GiB. The earlier full-data report (`DATA_FEATURE_VALIDATION.md`) retains the failure that led to this fix and the real PBMC Solo baseline. These are single runs, and STAR's full-human result was reused rather than rerun alongside the repair.
 
 The earlier saved human-reference runs show NuSTAR finishing the smaller tested two-pass, Solo, and BAM workloads sooner than STAR 2.7.11b. The compared outputs match in the cases listed below. This does not establish that NuSTAR is faster for every feature, or that every STAR option behaves identically.
 
-The tables below summarize the earlier measurements; the linked full-data report contains the newer runs. The measurements cover several NuSTAR builds from the feature migration, Solo refactor, and BAM implementation. They are not all measurements of the current executable. Each run directory records its commands and binary hashes.
+The tables below summarize the earlier measurements; the full-data report referenced above contains the newer runs, but is not included in this checkout. The measurements cover several NuSTAR builds from the feature migration, Solo refactor, and BAM implementation. They are not all measurements of the current executable. Each run directory records its commands and binary hashes.
 
 ## What “correctness” means here
 
@@ -72,7 +76,7 @@ For the human sorted-BAM comparison, the decoded-record agreement is 100% of the
 
 One saved two-pass edge case differs from the shipped STAR binary: with four threads, `--twopass1readsN 40`, and `--outSAMorder PairedKeepInputOrder`, STAR returned success but wrote zero alignment records, while NuSTAR wrote 227. The regular two-pass comparisons used `--outSAMorder Paired` and passed.
 
-This is recorded in [ordered-reference-behavior.json](../build/feature-migration/two-pass/ordered-reference-behavior.json). It is a compatibility difference in that tested combination, even though producing the records is the useful outcome. It should not be hidden behind a general claim that all behavior is identical.
+This is recorded in ordered-reference-behavior.json (`../build/feature-migration/two-pass/ordered-reference-behavior.json`). It is a compatibility difference in that tested combination, even though producing the records is the useful outcome. It should not be hidden behind a general claim that all behavior is identical.
 
 ### Mapping rates in the human runs
 
@@ -94,21 +98,21 @@ The shift between one-pass and two-pass is not evidence of an accuracy gain or l
 | Ordinary mapping without Solo | The newer full human first pass matches junctions and statistics, but complete per-read comparison and current-build SE/PE scaling measurements are still missing. |
 | Solo substeps | Separate timings for barcode correction, annotation, UMI deduplication, multimapper redistribution, and cell filtering. |
 | Real single-cell data | The newer full PBMC v3 test matches raw/filtered matrices and summaries. Real-data corrected BAM tags, more chemistries, and truth-based accuracy tests remain to be checked. |
-| Less common modes | More coverage for Transcript3p, parameter combinations, long CIGARs, and unusual inputs. The full human two-pass boundary failure also needs to be fixed and retested. |
+| Less common modes | More coverage for Transcript3p, parameter combinations, long CIGARs, and unusual inputs. The full-human boundary fix is reported above; keep regression coverage for that case. |
 | Reproducibility | Repeated runs of the same current binaries, with hardware, cache state, and disk conditions recorded. |
 
 ## Where the numbers come from
 
-These links point to local generated artifacts under `NuSTAR/build/`. They may be absent in a fresh checkout because `build/` is ignored by Git. The tables above retain the main results; keep the artifacts when reviewing or reproducing a claim.
+The paths below identify local generated artifacts under `NuSTAR/build/`. These artifacts are absent from this checkout because `build/` is ignored by Git. The tables above retain the main results; keep the artifacts when reviewing or reproducing a claim.
 
 | Group | Build/workload | Timing and commands | Output comparisons |
 | --- | --- | --- | --- |
-| A | Verified two-pass migration run | [results.json](../build/feature-migration/performance-verified/results.json), [metadata.json](../build/feature-migration/performance-verified/metadata.json) | [validation.json](../build/feature-migration/performance-verified/validation.json) |
-| B | Solo after module refactoring, no alignment file | [results.json](../build/solo-refactor/performance/results.json), [metadata.json](../build/solo-refactor/performance/metadata.json) | [validation.json](../build/solo-refactor/performance/validation.json) |
-| C | Final sorted-BAM run | [results.json](../build/bam-performance-final-sorted/results.json), [metadata.json](../build/bam-performance-final-sorted/metadata.json) | [feature outputs](../build/bam-performance-final-sorted/validation.json), [records, 1 thread](../build/bam-performance-final-sorted/bam-record-validation-1.json), [records, 32 threads](../build/bam-performance-final-sorted/bam-record-validation-32.json) |
-| D | Final unsorted-BAM run | [results.json](../build/bam-performance-final-unsorted/results.json), [metadata.json](../build/bam-performance-final-unsorted/metadata.json) | [feature outputs](../build/bam-performance-final-unsorted/validation.json), [records](../build/bam-performance-final-unsorted/bam-record-validation.json) |
-| E | Final BAM-input run | [results.json](../build/bam-performance-final-input/results.json), [metadata.json](../build/bam-performance-final-input/metadata.json) | [validation.json](../build/bam-performance-final-input/validation.json) |
+| A | Verified two-pass migration run | results.json (`../build/feature-migration/performance-verified/results.json`), metadata.json (`../build/feature-migration/performance-verified/metadata.json`) | validation.json (`../build/feature-migration/performance-verified/validation.json`) |
+| B | Solo after module refactoring, no alignment file | results.json (`../build/solo-refactor/performance/results.json`), metadata.json (`../build/solo-refactor/performance/metadata.json`) | validation.json (`../build/solo-refactor/performance/validation.json`) |
+| C | Final sorted-BAM run | results.json (`../build/bam-performance-final-sorted/results.json`), metadata.json (`../build/bam-performance-final-sorted/metadata.json`) | feature outputs (`../build/bam-performance-final-sorted/validation.json`), records, 1 thread (`../build/bam-performance-final-sorted/bam-record-validation-1.json`), records, 32 threads (`../build/bam-performance-final-sorted/bam-record-validation-32.json`) |
+| D | Final unsorted-BAM run | results.json (`../build/bam-performance-final-unsorted/results.json`), metadata.json (`../build/bam-performance-final-unsorted/metadata.json`) | feature outputs (`../build/bam-performance-final-unsorted/validation.json`), records (`../build/bam-performance-final-unsorted/bam-record-validation.json`) |
+| E | Final BAM-input run | results.json (`../build/bam-performance-final-input/results.json`), metadata.json (`../build/bam-performance-final-input/metadata.json`) | validation.json (`../build/bam-performance-final-input/validation.json`) |
 
-Small-case reports: [two-pass](../build/feature-migration/two-pass/validation.json), [Solo core](../build/bam-solo-regression/validation.json), [Solo adapters](../build/bam-solo-regression/adapter-validation.json), [BAM](../build/bam-validation-final/validation.json), and [paired flags](../build/bam-validation-final/pair-flags-validation.txt).
+Small-case reports: two-pass (`../build/feature-migration/two-pass/validation.json`), Solo core (`../build/bam-solo-regression/validation.json`), Solo adapters (`../build/bam-solo-regression/adapter-validation.json`), BAM (`../build/bam-validation-final/validation.json`), and paired flags (`../build/bam-validation-final/pair-flags-validation.txt`).
 
-The test entry points are in [VALIDATION.md](VALIDATION.md). [benchmark_features.py](../tools/benchmark/benchmark_features.py) records complete commands, wall time, CPU time, peak RSS, and output comparisons. Use its `--help` output when preparing a new run.
+The original `VALIDATION.md` report is absent. For available test entry points and configuration, see [CONTRIBUTING.md](../CONTRIBUTING.md#tests) and [tests/CMakeLists.txt](../tests/CMakeLists.txt). [benchmark_features.py](../tools/benchmark/benchmark_features.py) records complete commands, wall time, CPU time, peak RSS, and output comparisons. Use its `--help` output when preparing a new run.
