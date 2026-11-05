@@ -1,0 +1,31 @@
+{
+  "capacity_failures": [],
+  "command": [
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR",
+    "--genomeDir",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star",
+    "--readFilesIn",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R1.fastq",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R2.fastq",
+    "--runThreadN",
+    "1",
+    "--outFileNamePrefix",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1/star/output.",
+    "--sjdbOverhang",
+    "100",
+    "--limitSjdbInsertNsj",
+    "2000000",
+    "--outSAMtype",
+    "None"
+  ],
+  "returncode": 0,
+  "rss_kib": 29126528,
+  "seconds": 870.8559486512095,
+  "storage": {
+    "campaign_allocated_bytes": 116871089152,
+    "campaign_peak_observed_bytes": 116871089152,
+    "filesystem_free_bytes": 473021399695360
+  },
+  "system_seconds": 19.090914,
+  "user_seconds": 848.242685
+}

@@ -1,0 +1,222 @@
+{
+  "campaign.json": {
+    "bytes": 2548,
+    "sha256": "57481a65017fae8cd5e350b808d6766d741b476ac9326fb95e4b5a87e979f2bb"
+  },
+  "downloads/bulk/ENCFF001RDZ.fastq.gz.json": {
+    "bytes": 493,
+    "sha256": "debc3366352ebee9cb6fbf1d28750f9ca0890b19cd03ac9e8091fac67756567c"
+  },
+  "downloads/bulk/ENCFF001RED.fastq.gz.json": {
+    "bytes": 493,
+    "sha256": "7801c90a4cf7341b806beb85491abea0da62a521b15b4227fe2f0d0702acbd94"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L001_R1_001.fastq.gz.json": {
+    "bytes": 650,
+    "sha256": "830a8cb72f263a9e17a3204513539da238d3db1439b97960215e48101810d1f8"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L001_R2_001.fastq.gz.json": {
+    "bytes": 651,
+    "sha256": "13130c7e46b34ca93c9a54dd132dcd2201353f75e5951afa7e34fbf927a2d269"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L002_R1_001.fastq.gz.json": {
+    "bytes": 651,
+    "sha256": "202e00d98cce4794224125c3006b6d9b537bff3e6d3e1fb40770cd26de694277"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L002_R2_001.fastq.gz.json": {
+    "bytes": 652,
+    "sha256": "a2e6f3dcb8e8ebb8318e5e211ca1814dd59311f541fbc6a4a90efb34f51092ee"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L003_R1_001.fastq.gz.json": {
+    "bytes": 653,
+    "sha256": "14da66b89adce55d9bc77f8a80191fe6cefa7e6f46addcb5bd9bd36fcc7b7895"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L003_R2_001.fastq.gz.json": {
+    "bytes": 653,
+    "sha256": "0e71d47c2c26683f36a68bfec148e2a59ec0506b5f69808a7e9a46257f2f0788"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L004_R1_001.fastq.gz.json": {
+    "bytes": 653,
+    "sha256": "b78780abc65152e2c2e6f0820a0191efe3022ee2341d462bcd60b8baa5eab48e"
+  },
+  "downloads/pbmc/5k_pbmc_v3_S1_L004_R2_001.fastq.gz.json": {
+    "bytes": 653,
+    "sha256": "f24e3f777ef439bcd3532f0b385d32a558f391eba1a783bd2edcc6f553debb97"
+  },
+  "execution-policy.json": {
+    "bytes": 263,
+    "sha256": "77c44a43708b91a42b7fd5aafba33ac1415b3e5709319693afed826934125a07"
+  },
+  "index/nustar/validated-build.json": {
+    "bytes": 3437,
+    "sha256": "6dde3558e0fc0c930ad8d3b676cb41479689d526f407be124ea74b8e2c5336da"
+  },
+  "index/star/validated-build.json": {
+    "bytes": 3549,
+    "sha256": "08f329497604f0d9a9f0150ccab36ae5eaeace80afb9342cf08ed2abf8568167"
+  },
+  "job-ids.txt": {
+    "bytes": 24,
+    "sha256": "37acdcfaf82c5a30cf29963c96fd0e2d551ec3fd4dda1ed192cdfcfc1977af6f"
+  },
+  "logs/compiler.txt": {
+    "bytes": 225,
+    "sha256": "2830aa62030d3edbb1338bc51a6d4f3f7c30923c50f5139aad6cdde833b3c5b2"
+  },
+  "logs/harness-revisions/skip-pilot/change.json": {
+    "bytes": 1079,
+    "sha256": "06fa3ef97fa97ccaf5b711d57785586b323e9838681fee9299a2b2a169c14831"
+  },
+  "logs/index-nustar/console.log": {
+    "bytes": 367,
+    "sha256": "48fd20ffd68390c673b84f07a52688b7a130684ae42b9d3bbcb8f240a5dc152c"
+  },
+  "logs/index-nustar/timing.json": {
+    "bytes": 874,
+    "sha256": "1689d0549202fb25dcb3c4a424e709f0dedb2fe1b59dd81a9a42c8daffde86f3"
+  },
+  "logs/index-star/console.log": {
+    "bytes": 1311,
+    "sha256": "38bd6d3bba84288db831750747dcf9df54aa7455f8b7d18da9ba2e49118fe3a3"
+  },
+  "logs/index-star/timing.json": {
+    "bytes": 876,
+    "sha256": "8b27760b26a9ef548b0729dd1337d842ce01f1c6d655ccf60513edd5119eca32"
+  },
+  "logs/job-8361932-state.json": {
+    "bytes": 84,
+    "sha256": "3ce28beb3c828352b7bd28a5d3f6a462348fe9d979dc57a3c90fd93a70149a4e"
+  },
+  "logs/main-8361932.log": {
+    "bytes": 6905,
+    "sha256": "58055d5db5c2ed89dc18b2b23245c9b45637dc55758cfae45659729c37a32f64"
+  },
+  "logs/modules.txt": {
+    "bytes": 1031,
+    "sha256": "902056ec06e42357a2b69fb6cd050b2d2a966f7d8623488ec697bd640264d1bc"
+  },
+  "logs/nustar-version.txt": {
+    "bytes": 13,
+    "sha256": "f61de00b5d01d1cb2cfe31cb48971810c729329d08c10a9dd46b0fa85a06f3c0"
+  },
+  "logs/sacct.tsv": {
+    "bytes": 403,
+    "sha256": "ad395cfa1cfa8dd00e933fbdb48c6ea85dde79b3df9205d61dba59ad3b27e6d6"
+  },
+  "logs/samtools-version.txt": {
+    "bytes": 1229,
+    "sha256": "b7c0b860116910cc9eecd72cbc43582533ba4fe70516ffea7feb72cbd7f51813"
+  },
+  "logs/skipped-pilot-job-8361932.json": {
+    "bytes": 488,
+    "sha256": "caeba09b263c74ba3bd1b05e657f930b15d299c27b11d05d0b0a99bd8fd03e6a"
+  },
+  "logs/star-version.txt": {
+    "bytes": 8,
+    "sha256": "576fbf9acc5a4e3bfaac9345654fc49c8dbe02ed89748b24cd7b1f0b740e0054"
+  },
+  "prepared/bulk/main/prepared.json": {
+    "bytes": 642,
+    "sha256": "ff1539de0835afc76572a8a299f393eed93a6927c43c8cb419a0932a36fc7852"
+  },
+  "prepared/bulk/pilot/prepared.json": {
+    "bytes": 639,
+    "sha256": "c58c759282ebed74d672393f4cc9bb7e00564480cd45fcbb6532af8f01551328"
+  },
+  "prepared/bulk/scan.json": {
+    "bytes": 522,
+    "sha256": "9694344e282537de4720b36200290c71db3b99757a4487eec23592149de46bc0"
+  },
+  "prepared/pbmc/main/prepared.json": {
+    "bytes": 1330,
+    "sha256": "1df55771255f2e0b0b8d6e6531dccadaea0f2cf380e76f3fbde4711d98424509"
+  },
+  "prepared/pbmc/scan.json": {
+    "bytes": 1905,
+    "sha256": "82f9e6a99ef44b12ff073240505785c54d340d46ad775a392db3176735efcef3"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/nustar/output.Log.final.out": {
+    "bytes": 2025,
+    "sha256": "184ca93b8799a5b7aa6fef1070a6b284d0d1d8a72d2b7c07832f8d50906e8ab6"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/nustar/output.SJ.out.tab": {
+    "bytes": 6154430,
+    "sha256": "e345ed9ea0a625f0164e30110c5c9af6f8c7aca42eb2f97db79ab6ddd13f4fa4"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/nustar/timing.json": {
+    "bytes": 956,
+    "sha256": "3090baa32e6a049409d050204681f0230bf067381657fbde868b9bb58fbd04d8"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/star/output.Log.final.out": {
+    "bytes": 2025,
+    "sha256": "94084072849beec1b82a4ef89a23fbfe225ca627400b2845b45650cdb3ad87aa"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/star/output.SJ.out.tab": {
+    "bytes": 6154430,
+    "sha256": "7327975c755bff750b3ecbf2bc5313e8378624d780fcf1004bf2a61fa855d2ee"
+  },
+  "results/main-job-8361932/bulk-pe-1-r1/star/timing.json": {
+    "bytes": 956,
+    "sha256": "1dc075a10a454487da18e3dc649e6b3ab4d627cc2c5b9681d8a24109801ff135"
+  },
+  "results/main-job-8361932/bulk-se-1-r1/nustar/output.Log.final.out": {
+    "bytes": 2025,
+    "sha256": "ecf5ba00aa31c05ce152991cc2be13c5bcdb30a29a9458316a930c82c031ba94"
+  },
+  "results/main-job-8361932/bulk-se-1-r1/nustar/timing.json": {
+    "bytes": 875,
+    "sha256": "366d766d3fe50517d40144a63b8578877bbe8fe95f3e8abfbb782ce96860ec2b"
+  },
+  "results/main-job-8361932/bulk-se-1-r1/star/output.Log.final.out": {
+    "bytes": 2024,
+    "sha256": "fe45a6e6df5c6fe7664483123795607349e0d9e9615463f58941f5d3f3ffa54a"
+  },
+  "results/main-job-8361932/bulk-se-1-r1/star/timing.json": {
+    "bytes": 875,
+    "sha256": "ed4e092bdfbbcb5a8dede51fda7feb23e8d726c220ef82ca000718ebee8bbf9c"
+  },
+  "results/main-job-8361932/bulk-se-1-r1/validated.json": {
+    "bytes": 3669,
+    "sha256": "e6bae277a409de100c15a2568e8fc4f28edefdfba5f7a074ec1a19d938528df5"
+  },
+  "results/main-job-8361932/bulk-se-1-r2/validated.json": {
+    "bytes": 3668,
+    "sha256": "17328496323526b212ab4cc0356109578b01442ffd16863e995ccef057463788"
+  },
+  "results/main-job-8361932/bulk-se-1-r3/validated.json": {
+    "bytes": 3669,
+    "sha256": "301c08551066efa878813a818b0dcb2918310c3ab1ce1840bc3821405349d1f7"
+  },
+  "results/main-job-8361932/bulk-se-32-r1/validated.json": {
+    "bytes": 3675,
+    "sha256": "7b2e59213304f6c011688e4e24c54533d9ebc0e49944ef5f0b1986809a070734"
+  },
+  "results/main-job-8361932/bulk-se-32-r2/validated.json": {
+    "bytes": 3672,
+    "sha256": "b79b068a7d181ac8a881a2103f516d1be743afac432834026e7df2bd8ecfc738"
+  },
+  "results/main-job-8361932/bulk-se-32-r3/validated.json": {
+    "bytes": 3674,
+    "sha256": "cac22e9c28f8b76220876d8974f92bfa29e39f0b4aae5a1bf079aa2dd8f6201e"
+  },
+  "results/main-job-8361932/bulk-se-8-r1/validated.json": {
+    "bytes": 3668,
+    "sha256": "eebd6442dcdee1b11026d6f5007909290297f6aff8d5b238e35c2422e708e5be"
+  },
+  "results/main-job-8361932/bulk-se-8-r2/validated.json": {
+    "bytes": 3668,
+    "sha256": "81716bc1b658b23ace35e7049cd10e9406f43b6c31b1193441ff6df845ac5583"
+  },
+  "results/main-job-8361932/bulk-se-8-r3/validated.json": {
+    "bytes": 3670,
+    "sha256": "5a9a2e650ec141c8afc8df1370ab75d9d00bc3714cb66657fdb616370f7cc884"
+  },
+  "results/main-job-8361932/metadata.json": {
+    "bytes": 109560,
+    "sha256": "46c8c1474a344ded4a4941c4eb90784324205b7829ed5c9ad1eafe87067af244"
+  },
+  "results/main-job-8361932/status.json": {
+    "bytes": 322,
+    "sha256": "ab43aee4dbe3c8763072a2fbaaef36c5cb8e1c18bca8c3ebf3427e85aa396071"
+  }
+}

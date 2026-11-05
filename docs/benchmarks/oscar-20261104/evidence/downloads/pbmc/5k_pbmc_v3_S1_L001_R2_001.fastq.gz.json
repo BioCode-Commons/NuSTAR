@@ -1,0 +1,20 @@
+{
+  "bytes": 4631457831,
+  "resource_identity": "e399fe7d6564aeb3a2c99270db2cfa8c2b21c01d4067e33efc288ecfcafdcd29",
+  "sha256": "46ebfac8dc5210f4a83e6ed9f899c282abb3c4abd9feca834213b3df0056ed57",
+  "source": {
+    "archive_bytes": 29256734720,
+    "byte_range": [
+      2676493312,
+      7307951142
+    ],
+    "bytes": 4631457831,
+    "dataset": "5k_pbmc_v3",
+    "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+    "filename": "5k_pbmc_v3_S1_L001_R2_001.fastq.gz",
+    "lane": "001",
+    "mate": "R2",
+    "read_length": 91,
+    "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar"
+  }
+}

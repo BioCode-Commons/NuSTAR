@@ -1,0 +1,17 @@
+{
+  "execution_policy": {
+    "policy": {
+      "changed_at_utc": "2026-11-05T01:42:44.106088+00:00",
+      "enabled_stages": [
+        "main",
+        "full"
+      ],
+      "reason": "User requested skipping pilot and proceeding directly to the formal experiments. Formal output comparisons remain required.",
+      "schema": 1
+    },
+    "sha256": "77c44a43708b91a42b7fd5aafba33ac1415b3e5709319693afed826934125a07"
+  },
+  "job_id": "8361932",
+  "stage": "pilot",
+  "state": "skipped"
+}

@@ -1,0 +1,17 @@
+{
+  "compressed_sha256": {
+    "ENCFF001RDZ.fastq.gz": "574d63c81778eec6fd2340c00adfb65d57112431376dc59abaa89dce056af7c6",
+    "ENCFF001RED.fastq.gz": "1c47947ac30a0a9155f0db3df5aee18845ee311ae60a51154be66803de96f242"
+  },
+  "lane_order": [
+    [
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/downloads/bulk/ENCFF001RED.fastq.gz",
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/downloads/bulk/ENCFF001RDZ.fastq.gz"
+    ]
+  ],
+  "pairs": 92172367,
+  "plaintext_bytes": [
+    24102600882,
+    24102600882
+  ]
+}

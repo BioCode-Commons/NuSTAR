@@ -88,6 +88,14 @@ More examples—including single-end, two-pass, 10x, SmartSeq, and SAM/BAM input
 
 ## Benchmarks
 
+### Oscar RNA-seq campaign: partial results
+
+The November 4 campaign tested the documented K562 RNA-seq subset with NuSTAR `90de97d` and STAR 2.7.11b on the same Oscar node. Single-end runs with no SAM/BAM output passed exact junction-file and non-time statistics comparisons at 1, 8, and 32 threads, with three repetitions each. At 32 threads, median process time was **31.17 s for STAR and 21.49 s for NuSTAR**; median peak RSS was **30.78 GiB and 28.05 GiB**, respectively.
+
+**The first paired-end comparison failed.** Both programs processed ten million pairs, but two junction-support rows and some mapping statistics differ. The campaign stopped and its dependent full-data jobs were cancelled. Two-pass, BAM, Solo, and full-library results are not available from this campaign. These partial measurements do not establish full output compatibility. See the [measured results, mismatch details, and raw evidence](docs/benchmarks/oscar-20261104/REPORT.md).
+
+### Historical measurements
+
 The results below come from the repository's [runtime and correctness report](docs/STAR_COMPARISON.md). They are saved measurements from several NuSTAR builds, not a fresh benchmark of the current commit.
 
 > [!WARNING]

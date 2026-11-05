@@ -1,0 +1,4 @@
+Suffix construction: libsais64 2.12.1, positions=64bit, threads=32, physical_bases=6422347050
+GenomeGenerate complete: 194 chromosomes, 362117 inserted junctions, 6036544934 indexed suffixes
+Reference: "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar/reference.bin"
+Suffix array index: "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar/index.sa"

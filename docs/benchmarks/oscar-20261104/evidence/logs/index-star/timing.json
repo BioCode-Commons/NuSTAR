@@ -1,0 +1,32 @@
+{
+  "capacity_failures": [],
+  "command": [
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR",
+    "--runMode",
+    "genomeGenerate",
+    "--genomeDir",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star",
+    "--genomeFastaFiles",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/reference/genome.fa",
+    "--sjdbGTFfile",
+    "/sss/jobtmp/zliu328/nustar-benchmark-20261104/reference/genes.gtf",
+    "--sjdbOverhang",
+    "100",
+    "--genomeSAindexNbases",
+    "14",
+    "--genomeChrBinNbits",
+    "18",
+    "--runThreadN",
+    "32"
+  ],
+  "returncode": 0,
+  "rss_kib": 36530972,
+  "seconds": 1385.414946615696,
+  "storage": {
+    "campaign_allocated_bytes": 35113367552,
+    "campaign_peak_observed_bytes": 52554610176,
+    "filesystem_free_bytes": 473407959334912
+  },
+  "system_seconds": 76.107006,
+  "user_seconds": 17943.304173
+}

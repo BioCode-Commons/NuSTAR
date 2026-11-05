@@ -1,0 +1,25 @@
+{
+  "compressed_sha256": {
+    "5k_pbmc_v3_S1_L001_R1_001.fastq.gz": "5c9137d7597cc03ab201ad3f6a01d3d25c4119fce83ca37ec0426675df709d65",
+    "5k_pbmc_v3_S1_L001_R2_001.fastq.gz": "46ebfac8dc5210f4a83e6ed9f899c282abb3c4abd9feca834213b3df0056ed57",
+    "5k_pbmc_v3_S1_L002_R1_001.fastq.gz": "bae0040bacf689733ff20914afd8a0761d621fb9c1ad5571b740fd44e0dec89f",
+    "5k_pbmc_v3_S1_L002_R2_001.fastq.gz": "f394c548ebfcba0c9f6486e65d0a2570912aaa86780a73c494a4bdf65b47c725",
+    "5k_pbmc_v3_S1_L003_R1_001.fastq.gz": "15c06a09a73d43bec3900d785a6a9649054fc01b4793794d31bfcf686c285ca0",
+    "5k_pbmc_v3_S1_L003_R2_001.fastq.gz": "56821293b9c25e9a73a4e0e1ac334cf8047012780aaf1ef1dd8c1e3d0fe47f56",
+    "5k_pbmc_v3_S1_L004_R1_001.fastq.gz": "edaa5d58b1f7332ebe58e38ab06b7ab392e94d9982ca38997e688ce0ea8696fa",
+    "5k_pbmc_v3_S1_L004_R2_001.fastq.gz": "3734dbeda3c630284dcc72a6da44ec20f3e7caa9ff9eb2dc87254a75df4de636"
+  },
+  "files": {
+    "R1.fastq": {
+      "bytes": 1144674241,
+      "sha256": "b5fa365e69c4bc8535220b1e1df228973a1441d3491b75f37b3f1f62986a6597"
+    },
+    "R2.fastq": {
+      "bytes": 2404674241,
+      "sha256": "e6fce2be89c2b67587d198e08a9952255ce5f10994afdf736381bdce79bdb387"
+    }
+  },
+  "pairs": 10000000,
+  "sampling": "uniform without replacement; pilot nested in main; source order retained",
+  "seed": 20261104
+}

@@ -1,0 +1,5 @@
+{
+  "error": "AssertionError('file differs at block 1: /sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1/star/output.SJ.out.tab, /sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1/nustar/output.SJ.out.tab')",
+  "state": "failed",
+  "validated_pairs": 9
+}

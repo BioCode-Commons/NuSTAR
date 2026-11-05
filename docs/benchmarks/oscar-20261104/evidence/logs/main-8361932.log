@@ -1,0 +1,84 @@
+## SLURM PROLOG ###############################################################
+##    Job ID : 8361932
+##  Job Name : nustar-bench
+##  Nodelist : node1848
+##      CPUs : 1
+##  Mem/Node : 196608 MB
+## Directory : /oscar/home/zliu328
+##   Job Started : Wed Nov  4 05:11:45 PM EST 2026
+###############################################################################
++ root=/sss/jobtmp/zliu328/nustar-benchmark-20261104
++ budget=350
++ phase=main
++ harness=/jobtmp/zliu328/nustar-harness-20261104
++ [[ -f /sss/jobtmp/zliu328/nustar-benchmark-20261104/campaign.json ]]
++ [[ -n 8361932 ]]
++ mkdir -p /sss/jobtmp/zliu328/nustar-benchmark-20261104/logs /sss/jobtmp/zliu328/nustar-benchmark-20261104/tmp
++ export TMPDIR=/sss/jobtmp/zliu328/nustar-benchmark-20261104/tmp
++ TMPDIR=/sss/jobtmp/zliu328/nustar-benchmark-20261104/tmp
++ export OMP_NUM_THREADS=32
++ OMP_NUM_THREADS=32
++ export OMP_DYNAMIC=FALSE
++ OMP_DYNAMIC=FALSE
++ export LC_ALL=C
++ LC_ALL=C
++ export PYTHONUNBUFFERED=1
++ PYTHONUNBUFFERED=1
++ step=starting
++ trap finish EXIT
++ trap 'exit 143' TERM
++ prep=(python3 "$harness/prepare_inputs.py" --sources "$harness/sources.json" --root "$root" --disk-budget-gib "$budget")
++ runner=(python3 "$harness/run_suite.py" --manifest "$harness/suite.json" --root "$root" --disk-budget-gib "$budget" --prune-validated)
++ star=/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR
++ nustar=/sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar
++ star_index=/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star
++ nustar_index=/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar
+++ command -v samtools
++ samtools=/oscar/rt/9.6/25/spack/x86_64_v3/samtools-1.19.2-fm2x2kva7b4xvxe6sf4ezllomua5vjfy/bin/samtools
++ runner+=(--star "$star" --nustar "$nustar" --star-index "$star_index" --nustar-index "$nustar_index" --samtools "$samtools")
++ case "$phase" in
++ step=build
++ bash /jobtmp/zliu328/nustar-harness-20261104/setup.sh /sss/jobtmp/zliu328/nustar-benchmark-20261104 /jobtmp/zliu328/nustar-harness-20261104
+/usr/bin/git
+/oscar/rt/9.6/25/spack/x86_64_v3/cmake-3.31.8-i66z3yo5xalu2duhs2kmjixlsxgqutqc/bin/cmake
+/oscar/rt/9.6/25/spack/x86_64_v3/gcc-15.1.0-hhh7ckajwk4augihtjvlkizioke37vlf/bin/gcc
+/oscar/rt/9.6/25/spack/x86_64_v3/gcc-15.1.0-hhh7ckajwk4augihtjvlkizioke37vlf/bin/g++
+/oscar/rt/9.6/25/spack/x86_64_v3/gmake-4.4.1-pxn3sxlhddhpug4sj4w4gid2rjmgk7jk/bin/make
+/oscar/rt/9.6/25/spack/x86_64_v3/python-3.13.5-dz6tni4uhljueyq5uhxuhlrvjovmlu4v/bin/python3
+/oscar/rt/9.6/25/spack/x86_64_v3/samtools-1.19.2-fm2x2kva7b4xvxe6sf4ezllomua5vjfy/bin/samtools
+Cloning into '/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/NuSTAR'...
+HEAD is now at 90de97d docs: document NuSTAR workflows and implementation differences
+Cloning into '/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR'...
+HEAD is now at b1edc12 2.7.11b
++ step=reference
++ python3 /jobtmp/zliu328/nustar-harness-20261104/prepare_inputs.py --sources /jobtmp/zliu328/nustar-harness-20261104/sources.json --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --disk-budget-gib 350 --dataset reference
++ step=indexes
++ python3 /jobtmp/zliu328/nustar-harness-20261104/build_indexes.py --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --threads 32 --disk-budget-gib 350
++ step=bulk-subsets
++ python3 /jobtmp/zliu328/nustar-harness-20261104/prepare_inputs.py --sources /jobtmp/zliu328/nustar-harness-20261104/sources.json --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --disk-budget-gib 350 --dataset bulk
++ step=pbmc-subsets
++ python3 /jobtmp/zliu328/nustar-harness-20261104/prepare_inputs.py --sources /jobtmp/zliu328/nustar-harness-20261104/sources.json --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --disk-budget-gib 350 --dataset pbmc
++ step=pilot
++ srun --cpu-bind=cores python3 /jobtmp/zliu328/nustar-harness-20261104/run_suite.py --manifest /jobtmp/zliu328/nustar-harness-20261104/suite.json --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --disk-budget-gib 350 --prune-validated --star /sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR --nustar /sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar --star-index /sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star --nustar-index /sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar --samtools /oscar/rt/9.6/25/spack/x86_64_v3/samtools-1.19.2-fm2x2kva7b4xvxe6sf4ezllomua5vjfy/bin/samtools --stage pilot --threads 1 32 --repeats 1
+{"state": "skipped", "stage": "pilot", "execution_policy": {"policy": {"schema": 1, "enabled_stages": ["main", "full"], "reason": "User requested skipping pilot and proceeding directly to the formal experiments. Formal output comparisons remain required.", "changed_at_utc": "2026-11-05T01:42:44.106088+00:00"}, "sha256": "77c44a43708b91a42b7fd5aafba33ac1415b3e5709319693afed826934125a07"}, "job_id": "8361932"}
++ step=main
++ srun --cpu-bind=cores python3 /jobtmp/zliu328/nustar-harness-20261104/run_suite.py --manifest /jobtmp/zliu328/nustar-harness-20261104/suite.json --root /sss/jobtmp/zliu328/nustar-benchmark-20261104 --disk-budget-gib 350 --prune-validated --star /sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR --nustar /sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar --star-index /sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star --nustar-index /sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar --samtools /oscar/rt/9.6/25/spack/x86_64_v3/samtools-1.19.2-fm2x2kva7b4xvxe6sf4ezllomua5vjfy/bin/samtools --stage main --threads 1 8 32 --repeats 3
+Traceback (most recent call last):
+  File "/jobtmp/zliu328/nustar-harness-20261104/run_suite.py", line 224, in <module>
+    main()
+    ~~~~^^
+  File "/jobtmp/zliu328/nustar-harness-20261104/run_suite.py", line 194, in main
+    entry['validation'] = validate_pair(str(work / 'star/output.'), str(work / 'nustar/output.'),
+                          ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                        case, args.samtools, work)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sss/jobtmp/zliu328/nustar-harness-20261104/common.py", line 152, in validate_pair
+    result['files'][suffix] = same_file(star + suffix, nustar + suffix)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sss/jobtmp/zliu328/nustar-harness-20261104/common.py", line 66, in same_file
+    raise AssertionError(f'file differs at block {blocks}: {left}, {right}')
+AssertionError: file differs at block 1: /sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1/star/output.SJ.out.tab, /sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1/nustar/output.SJ.out.tab
+srun: error: node1848: task 0: Exited with exit code 1
++ finish
++ code=1
++ python3 - /sss/jobtmp/zliu328/nustar-benchmark-20261104 main main 1
