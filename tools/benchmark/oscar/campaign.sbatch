@@ -59,8 +59,6 @@ case "$phase" in
     "${prep[@]}" --dataset bulk
     step=pbmc-subsets
     "${prep[@]}" --dataset pbmc
-    step=pilot
-    srun --cpu-bind=cores "${runner[@]}" --stage pilot --threads 1 32 --repeats 1
     step=main
     srun --cpu-bind=cores "${runner[@]}" --stage main --threads 1 8 32 --repeats 3
     ;;

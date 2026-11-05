@@ -18,7 +18,7 @@ The old SRR21781765 measurements are excluded from this campaign: the cited acce
 
 | Stage | Inputs | Cases | Threads | Repetitions per engine |
 | --- | --- | --- | --- | ---: |
-| Pilot | Uniform one-million-pair subsets | Bulk SE, PE, PE two-pass, PE sorted BAM; Solo gene counts and sorted BAM | 1, 32 | 1 |
+| Optional pilot (skipped in this campaign) | Uniform one-million-pair subsets | Bulk SE, PE, PE two-pass, PE sorted BAM; Solo gene counts and sorted BAM | 1, 32 | 1 |
 | Main | Uniform ten-million-pair subsets | Same six cases | 1, 8, 32 | 3 |
 | Full bulk | Entire selected K562 replicate | Bulk SE, PE, PE two-pass, PE sorted BAM | 32 | 3 |
 | Full PBMC | Entire GEX library | Solo Gene + EmptyDrops_CR, expected cells 5000, no alignment file | 32 | 3 |
@@ -29,7 +29,7 @@ Cases and arguments are in `suite.json`. Within every pair, both engines receive
 
 ## Slurm and storage
 
-`submit.sh` submits three dependent `batch` jobs, each requesting **24 hours, one node, 32 CPUs, no SMT, and 192 GiB RAM**. Main includes preparation, builds, indexes, pilot, and main runs. Full bulk depends on main passing; full PBMC depends on full bulk passing. A failure cancels invalid downstream dependencies. Resources must first pass the actual account/partition checks; command-line submission options can be adjusted to the verified limits.
+`submit.sh` submits three dependent `batch` jobs, each requesting **24 hours, one node, 32 CPUs, no SMT, and 192 GiB RAM**. Main includes preparation, builds, indexes, and main runs. The pilot is skipped at the user's request. Full bulk depends on main passing; full PBMC depends on full bulk passing. A failure cancels invalid downstream dependencies. Resources must first pass the actual account/partition checks; command-line submission options can be adjusted to the verified limits.
 
 All downloads, source/build trees, native indexes, uncompressed inputs, sorting runs, logs, and results belong under one campaign directory on the selected temporary filesystem. The harness itself is also transferred to scratch. `TMPDIR` is inside the campaign. Home holds no datasets or indexes.
 
@@ -69,4 +69,8 @@ python3 -m unittest discover -s tools/benchmark/oscar -p 'test_*.py' -v
 bash -n tools/benchmark/oscar/campaign.sbatch tools/benchmark/oscar/setup.sh tools/benchmark/oscar/submit.sh tools/benchmark/oscar/status.sh
 ```
 
-These validate file/mate integrity, mismatches, capacity checks, and argument symmetry. Actual compilation, Slurm allocation, aligner behavior, and the pilot are verified on Oscar after authentication. Local checks do not simulate either aligner.
+These validate file/mate integrity, mismatches, capacity checks, and argument symmetry. Actual compilation, Slurm allocation, and aligner behavior are verified on Oscar after authentication. Local checks do not simulate either aligner.
+
+### Changing stage selection in a running campaign
+
+Slurm keeps a spool copy of submitted scripts. An optional `execution-policy.json` in the campaign root selects `enabled_stages` from `pilot`, `main`, and `full`, with `schema: 1` and a required `reason`. The runner reads it before creating any results or starting an aligner. Excluded stages receive a `skipped` record under `logs/`; they are never reported as passed. Formal runs record the policy and its hash in their metadata and retain all output validation. The November 4 campaign enables only `main` and `full` at the user's request. Already-running input preparation continues and may finish producing unused pilot FASTQs.

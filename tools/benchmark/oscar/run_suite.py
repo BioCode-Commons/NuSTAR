@@ -92,6 +92,20 @@ def command_for(binary, index, inputs, case, threads, prefix, whitelist):
     return command
 
 
+def execution_policy(root):
+    """Read an explicit stage selection, including for already-spooled Slurm jobs."""
+    path = root / 'execution-policy.json'
+    if not path.exists():
+        return None
+    policy = json.loads(path.read_text())
+    stages = policy.get('enabled_stages')
+    if (policy.get('schema') != 1 or not isinstance(stages, list) or not stages
+            or any(stage not in ['pilot', 'main', 'full'] for stage in stages)
+            or len(stages) != len(set(stages)) or not policy.get('reason')):
+        raise ValueError('invalid campaign execution policy')
+    return {'policy': policy, 'sha256': sha256(path)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ['root', 'manifest', 'star', 'nustar', 'star-index', 'nustar-index', 'samtools']:
@@ -112,11 +126,18 @@ def main():
     if max(args.threads) > len(affinity):
         parser.error('requested thread count exceeds process CPU affinity')
     root = args.root.resolve()
+    policy = execution_policy(root)
+    if policy is not None and args.stage not in policy['policy']['enabled_stages']:
+        record = {'state': 'skipped', 'stage': args.stage, 'execution_policy': policy,
+                  'job_id': os.environ['SLURM_JOB_ID']}
+        write_json(root / 'logs' / f'skipped-{args.stage}-job-{os.environ["SLURM_JOB_ID"]}.json', record)
+        print(json.dumps(record), flush=True)
+        return
     manifest = json.loads(args.manifest.read_text())
     suite = root / 'results' / f'{args.stage}-job-{os.environ["SLURM_JOB_ID"]}'
     suite.mkdir(parents=True, exist_ok=False)
     capacity = Capacity(root, args.disk_budget_gib << 30, args.reserve_gib << 30)
-    hardware = {'platform': platform.platform(), 'node': platform.node(),
+    hardware = {'execution_policy': policy, 'platform': platform.platform(), 'node': platform.node(),
                 'cpu_affinity': sorted(affinity), 'slurm': {k: v for k, v in os.environ.items() if k.startswith('SLURM_')},
                 'proc_cpuinfo': Path('/proc/cpuinfo').read_text(),
                 'proc_meminfo': Path('/proc/meminfo').read_text(),

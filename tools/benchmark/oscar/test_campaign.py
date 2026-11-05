@@ -10,12 +10,27 @@ import unittest
 
 from common import Capacity, compare_sam_streams, same_file, validate_pair, sha256
 from prepare_inputs import pairs
-from run_suite import command_for, measure
+from run_suite import command_for, measure, execution_policy
 
 
 SAM=b'@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\nr1\t0\tchr1\t1\t255\t4M\t*\t0\t0\tACGT\tIIII\tNH:i:1\n'
 
 class Integrity(unittest.TestCase):
+    def test_explicit_stage_policy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            self.assertIsNone(execution_policy(root))
+            path=root/'execution-policy.json'
+            policy={'schema':1,'enabled_stages':['main','full'],'reason':'User requested skipping pilot'}
+            path.write_text(json.dumps(policy))
+            result=execution_policy(root)
+            self.assertEqual(result['policy'],policy)
+            self.assertEqual(result['sha256'],sha256(path))
+            self.assertNotIn('pilot',result['policy']['enabled_stages'])
+            for stages in [[],['main','main'],['unknown'],'main']:
+                path.write_text(json.dumps({**policy,'enabled_stages':stages}))
+                with self.assertRaises(ValueError):execution_policy(root)
+
     def test_ordered_records_headers_and_tags(self):
         result=compare_sam_streams(io.BytesIO(SAM),io.BytesIO(SAM.replace(b'VN:1.6',b'VN:1.5')))
         self.assertEqual(result['records'],1)

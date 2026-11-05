@@ -1,6 +1,6 @@
 # Oscar benchmark plan
 
-Status: submitted on November 4, 2026. Job 8361932 covers preparation/pilot/main; 8361933 covers full bulk; 8361934 covers full PBMC, with after-success dependencies. No performance result is available yet. The [campaign harness](../tools/benchmark/oscar/README.md), [frozen sources](../tools/benchmark/oscar/sources.json), and [case matrix](../tools/benchmark/oscar/suite.json) are now available. Complete local checks before requesting Brown/Duo authentication.
+Status: submitted on November 4, 2026. Job 8361932 covers preparation/main (pilot skipped at the user's request); 8361933 covers full bulk; 8361934 covers full PBMC, with after-success dependencies. Index-construction measurements are available; alignment measurements are still pending. The [campaign harness](../tools/benchmark/oscar/README.md), [frozen sources](../tools/benchmark/oscar/sources.json), and [case matrix](../tools/benchmark/oscar/suite.json) are now available. Complete local checks before requesting Brown/Duo authentication.
 
 ## Runtime and storage
 
@@ -43,7 +43,7 @@ Use **ENCODE ENCSR000AEM, K562 polyA-plus RNA-seq**, biological replicate 1, wit
 
 Primary sources: [experiment](https://www.encodeproject.org/experiments/ENCSR000AEM/), [R1 metadata](https://www.encodeproject.org/files/ENCFF001RED/?format=json), and [R2 metadata](https://www.encodeproject.org/files/ENCFF001RDZ/?format=json). Metadata was checked on November 4, 2026.
 
-Run a one-million-pair pilot to check the environment and comparison machinery. Main measurements use a reproducible ten-million-pair subset, then the full selected replicate if the confirmed scratch quota and allocation support it. Keep mates synchronized and save the extraction method, source checksums, selected read count, and subset checksums. Do not call a newly sampled subset identical to a historical subset without matching its identity.
+Skip the one-million-pair pilot at the user's request. Main measurements use a reproducible ten-million-pair subset, then the full selected replicate if the confirmed scratch quota and allocation support it. Keep mates synchronized and save the extraction method, source checksums, selected read count, and subset checksums. Do not call a newly sampled subset identical to a historical subset without matching its identity.
 
 Cover paired-end one-pass alignment, `Basic` two-pass alignment, and coordinate-sorted BAM. Single-end results may use R1 alone, explicitly labeled as a single-end derivation of the paired library.
 
@@ -55,7 +55,7 @@ The official page lists R1 as 28 bp (16-base cell barcode plus 12-base UMI) and 
 
 Source: [10x dataset page](https://www.10xgenomics.com/datasets/5-k-peripheral-blood-mononuclear-cells-pbm-cs-from-a-healthy-donor-v-3-chemistry-3-1-standard-3-0-2).
 
-Use a synchronized subset for the pipeline pilot, then the complete selected library for cell filtering and full raw/filtered matrix comparison if scratch capacity permits. Label subset cell-calling results separately, since downsampling changes the observed library. Cover Solo gene counting without alignment output and corrected sorted-BAM tags on the ten-million-pair subset. Run full-library gene counting and cell filtering without a full-library BAM to control scratch use. Full-library corrected BAM tags are not covered by this campaign. Synthetic barcodes may supplement implementation checks; they are not a substitute for this real single-cell dataset.
+Use a synchronized ten-million-pair subset for the formal comparison, then the complete selected library for cell filtering and full raw/filtered matrix comparison if scratch capacity permits. Label subset cell-calling results separately, since downsampling changes the observed library. Cover Solo gene counting without alignment output and corrected sorted-BAM tags on the ten-million-pair subset. Run full-library gene counting and cell filtering without a full-library BAM to control scratch use. Full-library corrected BAM tags are not covered by this campaign. Synthetic barcodes may supplement implementation checks; they are not a substitute for this real single-cell dataset.
 
 ## Reference and comparison
 
@@ -71,7 +71,7 @@ Report the individual runs, median, range, and STAR/NuSTAR ratio. Separate input
 
 ## Execution package
 
-See the [campaign guide](../tools/benchmark/oscar/README.md) for the exact matrix, three dependent 24-hour jobs, capacity enforcement, cleanup rules, source revisions, and the one-login launch/monitor procedure. Local checks are not a substitute for the Oscar pilot.
+See the [campaign guide](../tools/benchmark/oscar/README.md) for the exact matrix, three dependent 24-hour jobs, capacity enforcement, cleanup rules, source revisions, and the one-login launch/monitor procedure. Local checks do not establish aligner compatibility; formal runs require output comparisons.
 
 ## Live preflight — November 4, 2026
 
@@ -80,3 +80,7 @@ Ordinary scratch is 483.79/512 GB used. The campaign will use `/jobtmp/zliu328`,
 ## Submission and supervision
 
 Jobs `8361932`, `8361933`, and `8361934` were accepted in `batch`, each with 24-hour walltime, 32 CPUs, and 192 GiB RAM. The main job initially waited for scheduler priority, then started on node1848 and entered the build phase. Full-data jobs wait for successful dependencies. The experiment is at `/sss/jobtmp/zliu328/nustar-benchmark-20261104`. A thread heartbeat checks every 15 minutes through the authenticated SSH master, reports meaningful transitions or failures, and retrieves verified results.
+
+## Execution change: skip pilot
+
+The user requested proceeding directly to the formal experiments. The running campaign now selects only `main` and `full` through an explicit execution policy. The already-spooled pilot invocation will record `skipped` without running either aligner or claiming a passing comparison. Input preparation already in progress is retained. Main and full workloads, repetitions, and output-comparison gates are unchanged.
