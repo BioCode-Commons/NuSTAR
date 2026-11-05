@@ -37,7 +37,13 @@ Both junction files have 164,877 rows and the same genomic coordinates. Two rows
 
 Their strand, motif, annotation status, and maximum overhang fields match. Mapping statistics also differ: STAR reports 8,213,543 uniquely mapped fragments and 1,305,608 multimapping fragments; NuSTAR reports 8,213,538 and 1,305,613 respectively. Total splice counts are 6,049,989 versus 6,049,960. Both processed exactly 10,000,000 input pairs.
 
-The affected read identities and the cause have not been established: this case deliberately did not emit read-level alignments. The result is a genuine output difference, not merely header ordering or compressed-byte variation. The aligners and their algorithms have not been modified to remove it.
+A diagnostic replay has now identified the affected reads. Job 8381167 ran both unchanged engines with one thread on node1827 and enabled SAM output. Each engine exactly reproduced its original junction table and non-time mapping statistics. This diagnostic run is separate from the performance measurements on node1848.
+
+There are **24 read pairs with different SAM records**: five change from `NH:i:1` in STAR to `NH:i:2` in NuSTAR; the other 19 retain `NH:i:1` but have different alignment records. All 24 belong to the 56 pairs that span either affected junction in at least one engine. The handoff includes those 56 pairs, including 32 additional junction-support pairs whose records match. These observations do not establish the implementation bug's cause.
+
+Replaying only the 56 extracted pairs reproduced the same 24 differing read IDs. For each engine, all SAM records for all 56 pairs were also identical to that engine's corresponding records in the full ten-million-pair replay, after sorting optional tags and record order. The original failed outputs and full diagnostic outputs remain on Oscar.
+
+Download the [developer handoff archive](read-discrepancy/paired-read-handoff.tar.gz), or read its [instructions](read-discrepancy/paired-read-handoff/README.md). It contains paired FASTQs, both full-replay and subset SAMs, exact differences, read IDs, executable hashes, reference/index provenance, and a reproduction script. The root cause is still unresolved; neither aligner was changed.
 
 Evidence: [STAR junctions](evidence/results/main-job-8361932/bulk-pe-1-r1/star/output.SJ.out.tab), [NuSTAR junctions](evidence/results/main-job-8361932/bulk-pe-1-r1/nustar/output.SJ.out.tab), [STAR statistics](evidence/results/main-job-8361932/bulk-pe-1-r1/star/output.Log.final.out), [NuSTAR statistics](evidence/results/main-job-8361932/bulk-pe-1-r1/nustar/output.Log.final.out), and [failed suite status](evidence/results/main-job-8361932/status.json).
 

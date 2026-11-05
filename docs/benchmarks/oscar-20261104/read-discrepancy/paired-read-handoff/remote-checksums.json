@@ -1,0 +1,21 @@
+{
+  "R1.fastq": "4b0d0e443ae45fbfce3bd9201de41a13c11aba9a7467de8e962a0a995a2805f5",
+  "R2.fastq": "3f204505c6bc4c52cc1c6b3c5f1b8691613c4bdc84a0afab16d545f7d79a52ee",
+  "README.md": "3d66a6b20a081cf5e470b9a93a6a9aed25125609cbbc66177d1f44e3c9aff2bf",
+  "metadata.json": "0b4eee54b272981a01209f60dab183385b5970e783797b147b130e82b128eeda",
+  "nustar.output.Log.final.out": "9f5190f4ec404914af6a35eeac5bdab3091d1aa9f024e14d7a228d1a2fed91ec",
+  "nustar.output.SJ.out.tab": "e345ed9ea0a625f0164e30110c5c9af6f8c7aca42eb2f97db79ab6ddd13f4fa4",
+  "nustar.sam": "4bf9af5cae293d585fab703c160f6054e8fb86c7d4ee0c747882232557ebf797",
+  "nustar.timing.json": "eb3e7c5509ff09c568e70fc14c8a060a0a1ce094f7ae105bce5b1c68c1baf229",
+  "read-ids.tsv": "3466db111648cfdf4fb659a7103530b5166370c7cf2006c3a5e0a3e72d8f0d56",
+  "record-differences.jsonl": "9bf5746144288f269ecb5822cc13c5099bc3d3b4112f75d1aff7e0b1d9bbc99d",
+  "reproduce.py": "555f112ed69723ddac0e4dd80c982119a90aea28d35322b77d8d8c58a18674cb",
+  "star.output.Log.final.out": "25745b4c6d2d05d0d6c23218a0a1ddff74118ebf543f8f9f308abf7934d1aa20",
+  "star.output.SJ.out.tab": "7327975c755bff750b3ecbf2bc5313e8378624d780fcf1004bf2a61fa855d2ee",
+  "star.sam": "4c57d859716b5e52f4aba96a3cf1a11305570c4f87a52dee3d8f21c469149191",
+  "star.timing.json": "b970907371c734b0336a17d215ed88745ac6641f7a4f4b7cd557b8ebf829b0ae",
+  "subset-nustar.sam": "910f95aab617defb7d820c961ed8462c95f3c50015afaf1168630686d104798f",
+  "subset-nustar.timing.json": "bee9c6eb40778741a699c2d7dc1dd0df62e190e110b6f955d144221fa2f1038a",
+  "subset-star.sam": "619cbe208f5f6dcfa3b52214cd067ecdb795c8379ee065fffb4cd2c026733fa5",
+  "subset-star.timing.json": "c0a23bac17912489fb006f6e51dd51a18761a94237a0cb91b48d44b0ad36c3bf"
+}

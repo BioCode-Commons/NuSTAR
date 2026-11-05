@@ -1,0 +1,86 @@
+{
+  "archive": "/sss/jobtmp/zliu328/nustar-benchmark-20261104/diagnostics/paired-reads-job-8381167/paired-read-handoff.tar.gz",
+  "job_id": "8381167",
+  "state": "complete",
+  "step": "finished",
+  "summary": {
+    "changed_junctions": [
+      [
+        "chr12",
+        "6668116",
+        "6669030"
+      ],
+      [
+        "chr12",
+        "6669190",
+        "6670759"
+      ]
+    ],
+    "commands": {
+      "nustar": [
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar",
+        "--genomeDir",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar",
+        "--readFilesIn",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R1.fastq",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R2.fastq",
+        "--runThreadN",
+        "1",
+        "--outFileNamePrefix",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/diagnostics/paired-reads-job-8381167/nustar/output.",
+        "--sjdbOverhang",
+        "100",
+        "--limitSjdbInsertNsj",
+        "2000000",
+        "--outSAMtype",
+        "SAM",
+        "--outSAMunmapped",
+        "Within",
+        "--outSAMattributes",
+        "NH",
+        "HI",
+        "AS",
+        "nM"
+      ],
+      "star": [
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR",
+        "--genomeDir",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/star",
+        "--readFilesIn",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R1.fastq",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/prepared/bulk/main/R2.fastq",
+        "--runThreadN",
+        "1",
+        "--outFileNamePrefix",
+        "/sss/jobtmp/zliu328/nustar-benchmark-20261104/diagnostics/paired-reads-job-8381167/star/output.",
+        "--sjdbOverhang",
+        "100",
+        "--limitSjdbInsertNsj",
+        "2000000",
+        "--outSAMtype",
+        "SAM",
+        "--outSAMunmapped",
+        "Within",
+        "--outSAMattributes",
+        "NH",
+        "HI",
+        "AS",
+        "nM"
+      ]
+    },
+    "differing_read_pairs": 24,
+    "exported_read_pairs": 56,
+    "files": {
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar": "e2faee2544bda7e7b84966df5deb8b2178eb99fb662693af618f637c5ff57047",
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/source/STAR/source/STAR": "5cd53464bc4441b6e758d8fd7d64f503b07075026090778963e40a7c2c92ca34"
+    },
+    "hostname": "node1827.oscar.ccv.brown.edu",
+    "input_pairs_scanned": 10000000,
+    "job_id": "8381167",
+    "junction_support_read_pairs": 56,
+    "original_comparison": "/sss/jobtmp/zliu328/nustar-benchmark-20261104/results/main-job-8361932/bulk-pe-1-r1",
+    "original_summary_reproduced": true,
+    "subset_differing_read_pairs": 24,
+    "subset_reproduces_same_differing_read_ids": true
+  }
+}
