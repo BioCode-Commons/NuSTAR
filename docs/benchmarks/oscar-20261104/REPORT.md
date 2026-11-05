@@ -45,6 +45,8 @@ Replaying only the 56 extracted pairs reproduced the same 24 differing read IDs.
 
 Download the [developer handoff archive](read-discrepancy/paired-read-handoff.tar.gz), or read its [instructions](read-discrepancy/paired-read-handoff/README.md). It contains paired FASTQs, both full-replay and subset SAMs, exact differences, read IDs, executable hashes, reference/index provenance, and a reproduction script. The root cause is still unresolved; neither aligner was changed.
 
+For stepping through one fragment, use the [24-pair debugging archive](read-discrepancy/discrepant-24-pairs.tar.gz) and its [instructions](read-discrepancy/discrepant-24-pairs/README.md). It contains only the discrepant pairs, each in a separate directory with exact paired FASTQs and both observed SAM record groups. The runner selects a pair with `--pair pair-001` and prints a debugger-ready command with `--engine nustar --dry-run`. Individual-pair and 24-pair-only replay behavior has not been measured; the independently verified reduced input remains the earlier 56-pair set.
+
 Evidence: [STAR junctions](evidence/results/main-job-8361932/bulk-pe-1-r1/star/output.SJ.out.tab), [NuSTAR junctions](evidence/results/main-job-8361932/bulk-pe-1-r1/nustar/output.SJ.out.tab), [STAR statistics](evidence/results/main-job-8361932/bulk-pe-1-r1/star/output.Log.final.out), [NuSTAR statistics](evidence/results/main-job-8361932/bulk-pe-1-r1/nustar/output.Log.final.out), and [failed suite status](evidence/results/main-job-8361932/status.json).
 
 ## Index construction

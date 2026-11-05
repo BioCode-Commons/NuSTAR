@@ -1,0 +1,105 @@
+{
+  "files": {
+    "chrLength.txt": {
+      "bytes": 1200,
+      "sha256": "b297c2398f93cd3d4c8aa1d4e10d6148c9550a1c2175139c29f9aab505422a17"
+    },
+    "chrName.txt": {
+      "bytes": 1997,
+      "sha256": "12d83750559b9ae7d273b4b7ce6077e6f24c43eb65672d1fbcfa2e1593fd3ee8"
+    },
+    "chrNameLength.txt": {
+      "bytes": 3197,
+      "sha256": "d525ee20551f34768f4017c7a779a3f3c7b947dacdea27838a5776508834b306"
+    },
+    "chrStart.txt": {
+      "bytes": 2129,
+      "sha256": "09e1d0f13d91fd4540be6e87c62f05c57bb54e465ea67bc1e24d347f623ea121"
+    },
+    "exonGeTrInfo.tab": {
+      "bytes": 46073063,
+      "sha256": "725729e74089adb35cb95a25dcc5e7c2b4c5f4f35533951c6b5816c32f05d1cf"
+    },
+    "exonInfo.tab": {
+      "bytes": 19006806,
+      "sha256": "c62038f9cca6fa507f77142879941e38cb13d9937755b18139001efa451e8fae"
+    },
+    "geneInfo.tab": {
+      "bytes": 1308277,
+      "sha256": "7c4127b4f72db06d683348f4e6df21220e65662b862393f06befc7bf027856d1"
+    },
+    "index.sa": {
+      "bytes": 26466621539,
+      "sha256": "01d62d7672c66c0f530f4b1b77f535acadb86f70a546623ea4d3c9a55f56bcae"
+    },
+    "index.sa.sha256": {
+      "bytes": 65,
+      "sha256": "089897b41f1d25d30e5cf139e42b6031197229b47ab714fa3c08d59635864899"
+    },
+    "nustarGenomeParameters.txt": {
+      "bytes": 617,
+      "sha256": "fc8fbd717c3dcb11027f5185cdf718bb4e5a4dcc405ca7bc29d4c5d4e467a83b"
+    },
+    "reference.bin": {
+      "bytes": 3232906304,
+      "sha256": "fce156798a656aa7ea5fd53a1b5f1566a9b5075f2459fd80faa4f04d6356168c"
+    },
+    "sjdbInfo.txt": {
+      "bytes": 10571670,
+      "sha256": "4d6d208fd64e0429d04fcf82881aec1525d9d23201ada1bd214c3da67dbbe21b"
+    },
+    "sjdbList.fromGTF.out.tab": {
+      "bytes": 11433078,
+      "sha256": "550937443a92612cbf3b1e57b6f4028267046c0ec2d5f8bc05db4be8822c6bca"
+    },
+    "sjdbList.out.tab": {
+      "bytes": 9370060,
+      "sha256": "d412c6ccd28ec02714e24cfd1ed997b88da59a7aa3c141c0ebb1a47e611a6e55"
+    },
+    "transcriptInfo.tab": {
+      "bytes": 12910609,
+      "sha256": "253c70c9bd7592c0b735d8693a84df0235a166769e806e26fedd09e6cecf69f3"
+    }
+  },
+  "identity": {
+    "binary_sha256": "e2faee2544bda7e7b84966df5deb8b2178eb99fb662693af618f637c5ff57047",
+    "fasta_sha256": "fb7421217e7058120cd60a5277445198e8deef2dff1edc46cd1e98b31fe64cbb",
+    "genomeChrBinNbits": 18,
+    "genomeSAindexNbases": 14,
+    "gtf_sha256": "2dc6e7406e883a146c7cc933a2b08c8d0546e7b57e0487a93cbbc1c455868528",
+    "sjdbOverhang": 100,
+    "threads": 32
+  },
+  "measurement": {
+    "capacity_failures": [],
+    "command": [
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/build/nustar/nustar",
+      "--runMode",
+      "genomeGenerate",
+      "--genomeDir",
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/index/nustar",
+      "--genomeFastaFiles",
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/reference/genome.fa",
+      "--sjdbGTFfile",
+      "/sss/jobtmp/zliu328/nustar-benchmark-20261104/reference/genes.gtf",
+      "--sjdbOverhang",
+      "100",
+      "--genomeSAindexNbases",
+      "14",
+      "--genomeChrBinNbits",
+      "18",
+      "--runThreadN",
+      "32"
+    ],
+    "returncode": 0,
+    "rss_kib": 89412776,
+    "seconds": 802.2661573365331,
+    "storage": {
+      "campaign_allocated_bytes": 64970377728,
+      "campaign_peak_observed_bytes": 64970377728,
+      "filesystem_free_bytes": 473366980984832
+    },
+    "system_seconds": 286.680068,
+    "user_seconds": 3552.992555
+  }
+}

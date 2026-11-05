@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "checked_on": "2026-11-04",
+  "resources": {
+    "bulk_R1": {
+      "url": "https://www.encodeproject.org/files/ENCFF001RED/@@download/ENCFF001RED.fastq.gz",
+      "bytes": 7668466665,
+      "md5": "0e88b38c8d48806ee98929a5bad06fc4",
+      "filename": "ENCFF001RED.fastq.gz",
+      "dataset": "ENCSR000AEM",
+      "read_length": 101,
+      "mate": "R1"
+    },
+    "bulk_R2": {
+      "url": "https://www.encodeproject.org/files/ENCFF001RDZ/@@download/ENCFF001RDZ.fastq.gz",
+      "bytes": 7848217965,
+      "md5": "3a25713488522b0ea8a4d9635b5afa41",
+      "filename": "ENCFF001RDZ.fastq.gz",
+      "dataset": "ENCSR000AEM",
+      "read_length": 101,
+      "mate": "R2"
+    },
+    "pbmc_L001_R1": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        656652288,
+        2676492439
+      ],
+      "bytes": 2019840152,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L001_R1_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "001",
+      "mate": "R1",
+      "read_length": 28
+    },
+    "pbmc_L001_R2": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        2676493312,
+        7307951142
+      ],
+      "bytes": 4631457831,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L001_R2_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "001",
+      "mate": "R2",
+      "read_length": 91
+    },
+    "pbmc_L002_R1": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        7966967808,
+        9995504016
+      ],
+      "bytes": 2028536209,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L002_R1_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "002",
+      "mate": "R1",
+      "read_length": 28
+    },
+    "pbmc_L002_R2": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        9995504640,
+        14654819377
+      ],
+      "bytes": 4659314738,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L002_R2_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "002",
+      "mate": "R2",
+      "read_length": 91
+    },
+    "pbmc_L003_R1": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        15313270272,
+        17335546364
+      ],
+      "bytes": 2022276093,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L003_R1_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "003",
+      "mate": "R1",
+      "read_length": 28
+    },
+    "pbmc_L003_R2": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        17335546880,
+        21972496712
+      ],
+      "bytes": 4636949833,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L003_R2_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "003",
+      "mate": "R2",
+      "read_length": 91
+    },
+    "pbmc_L004_R1": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        22629156352,
+        24643645284
+      ],
+      "bytes": 2014488933,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L004_R1_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "004",
+      "mate": "R1",
+      "read_length": 28
+    },
+    "pbmc_L004_R2": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/3.0.2/5k_pbmc_v3/5k_pbmc_v3_fastqs.tar",
+      "byte_range": [
+        24643645952,
+        29256728933
+      ],
+      "bytes": 4613082982,
+      "etag": "\"aac08968f7a2eafc2d62990367c106e1-3488\"",
+      "archive_bytes": 29256734720,
+      "filename": "5k_pbmc_v3_S1_L004_R2_001.fastq.gz",
+      "dataset": "5k_pbmc_v3",
+      "lane": "004",
+      "mate": "R2",
+      "read_length": 91
+    },
+    "reference": {
+      "url": "https://s3-us-west-2.amazonaws.com/10x.files/supp/cell-exp/refdata-gex-GRCh38-2020-A.tar.gz",
+      "bytes": 11448662640,
+      "etag": "\"756a4eb76dccb0a7f9d909ace754c6ee-1365\"",
+      "filename": "refdata-gex-GRCh38-2020-A.tar.gz",
+      "members": {
+        "refdata-gex-GRCh38-2020-A/fasta/genome.fa": "genome.fa",
+        "refdata-gex-GRCh38-2020-A/genes/genes.gtf": "genes.gtf",
+        "refdata-gex-GRCh38-2020-A/reference.json": "reference.json"
+      }
+    },
+    "whitelist": {
+      "url": "https://raw.githubusercontent.com/Teichlab/scg_lib_structs/8eaf6bee75e0588f8177da4efdf0f1c39d357fa4/data/10X-Genomics/3M-february-2018.txt.gz",
+      "bytes": 18350152,
+      "sha256": "6f5c08bd6c0c63e7cd4f62bc5ec47024baaf6b230524f313799b9f5431df7b37",
+      "filename": "3M-february-2018.txt.gz",
+      "barcode_count": 6794880
+    }
+  },
+  "reference": "10x GRCh38-2020-A, using only FASTA, GTF and reference metadata; rebuild both indexes",
+  "upstream_star_commit": "b1edc1208d91a53bf40ebae8669f71d50b994851",
+  "source_pages": {
+    "bulk": "https://www.encodeproject.org/experiments/ENCSR000AEM/",
+    "pbmc": "https://www.10xgenomics.com/datasets/5-k-peripheral-blood-mononuclear-cells-pbm-cs-from-a-healthy-donor-v-3-chemistry-3-1-standard-3-0-2",
+    "whitelist": "https://scg-lib-structs.readthedocs.io/en/latest/ge/10xChromium3v3.html"
+  }
+}
