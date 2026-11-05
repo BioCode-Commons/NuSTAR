@@ -1,0 +1,17 @@
+{
+  "job_id": "8381167",
+  "purpose": "Extract actual discrepant paired reads and junction-support reads for developer debugging; do not resume the full benchmark matrix.",
+  "remote_work": "/jobtmp/zliu328/nustar-benchmark-20261104/diagnostics/paired-reads-job-8381167",
+  "resources": {
+    "partition": "batch",
+    "cpus": 1,
+    "memory_gib": 64,
+    "time_limit": "04:00:00"
+  },
+  "state_at_submission": "RUNNING",
+  "node": "node1827",
+  "scripts": {
+    "tools/benchmark/oscar/extract_discrepant_reads.py": "d5c168b2852d0d36102e212bd43dd529083ea5558d8e930474cbdcd7374803b0",
+    "tools/benchmark/oscar/extract_discrepant_reads.sbatch": "53b8832ea00a907afed6814e60c9dfef56b8e03df5871de4e96f49a921ee3616"
+  }
+}
