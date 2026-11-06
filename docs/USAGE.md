@@ -4,6 +4,17 @@
 
 Run the examples from the repository root after building `build/release/nustar` and creating a NuSTAR index. Supply your own input files and create the output parent directory, such as `results/`, before running a command.
 
+## Contents
+
+- [Workflows](#workflows)
+  - [Single-end alignment](#single-end-alignment)
+  - [Two-pass alignment](#two-pass-alignment)
+  - [Overlapping paired-end reads](#overlapping-paired-end-reads)
+  - [Single-cell: 10x 3′ v3](#single-cell-10x-3-v3)
+- [Outputs](#outputs)
+- [Compatibility](#compatibility)
+- [Parameter reference](#parameter-reference)
+
 ## Workflows
 
 ### Single-end alignment
@@ -16,6 +27,8 @@ build/release/nustar --genomeDir index/human \
 ```
 
 The default alignment output is SAM. Use `--outSAMtype None` to retain junctions, statistics, and requested Solo counts without writing alignment records.
+
+[↑ Contents](#contents)
 
 ### Two-pass alignment
 
@@ -31,6 +44,8 @@ Pass one discovers junctions. NuSTAR inserts accepted junction sequences into th
 - `--sjdbInsertSave All` also saves the updated native index.
 - Input must remain available for both passes.
 
+[↑ Contents](#contents)
+
 ### Overlapping paired-end reads
 
 To enable overlap merge/remapping, add these options to a paired-end command:
@@ -42,6 +57,8 @@ To enable overlap merge/remapping, add these options to a paired-end command:
 `20` is an example overlap threshold, not a benchmark-derived recommendation. The default `--peOverlapNbasesMin 0` disables the helper. `--peOverlapMMp` defaults to `0.01` and accepts values greater than or equal to zero and less than one. The overlap search counts ambiguous bases as mismatches and uses mismatches divided by matches, following STAR's rule.
 
 NuSTAR maps a merged sequence in a separate workspace, projects its blocks back to the two mates, and recalculates paired scores before selection. Original read sequences remain available for SAM/BAM output. This is a paired-end mapping feature, not adapter clipping.
+
+[↑ Contents](#contents)
 
 ### Single-cell: 10x 3′ v3
 
@@ -123,6 +140,8 @@ build/release/nustar --runMode soloCellFiltering \
 
 </details>
 
+[↑ Contents](#contents)
+
 ## Outputs
 
 Paths below are appended to `--outFileNamePrefix`. Alignment files depend on the selected output mode; Solo matrices require a counting workflow.
@@ -139,6 +158,8 @@ Paths below are appended to `--outFileNamePrefix`. Alignment files depend on the
 
 Request both BAM orders with `--outSAMtype BAM Unsorted SortedByCoordinate`. BAM index files (`BAI`/`CSI`) are not generated.
 
+[↑ Contents](#contents)
+
 ## Compatibility
 
 NuSTAR follows STAR option names and argument forms where implemented. It is a partial implementation; a successful comparison on one dataset does not establish compatibility with all STAR workflows.
@@ -151,6 +172,8 @@ NuSTAR follows STAR option names and argument forms where implemented. It is a p
 | Output | SAM, unsorted/sorted BAM, junction tables, mapping statistics | CRAM as a supported interface, BAI/CSI generation, transcriptome BAM, bulk `GeneCounts`, signal tracks, all STAR header/tag customization. BAM read names are limited to 254 bytes and CIGARs to 65,535 operations. |
 | Solo | Barcode extraction/correction, UMI deduplication, gene/SJ/velocity counting, cell filtering, matrix output, SmartSeq, corrected BAM tags | Full validation of every mode/parameter combination on real single-cell datasets; `Transcript3p` remains less tested. |
 | Parallelism and profiling | Shared read-only index, worker-local workspaces, ordered output, BAM compression/sorting, stage timing | Detailed paired-end stage timing. |
+
+[↑ Contents](#contents)
 
 ## Parameter reference
 
@@ -268,3 +291,5 @@ Not every combination is valid. For example, `CB_UMI_Complex` uses `Exact`, `1MM
 These controls have no direct STAR equivalent. Benchmark and trace scripts also have their own tool-specific arguments; use their `--help` output.
 
 </details>
+
+[↑ Contents](#contents)

@@ -2,7 +2,17 @@
 
 Start with [cli/align_reads.cpp](cli/align_reads.cpp). It turns command-line arguments into a run configuration and chooses the single-end or paired-end runner. The alignment algorithms live below that layer; they do not parse arguments or open output files.
 
-Most alignment code uses the namespace `nustar::star2711b`. The suffix names the STAR version whose behavior it follows. Files such as `star_search.cpp` and `star_window.cpp` are NuSTAR's implementations of those stages, not wrappers that call a STAR executable.
+Most alignment code uses the namespace `nustar::star2711b`. Stage implementations share a read-only reference and keep per-worker workspaces.
+
+## Contents
+
+- [From a read to an alignment](#from-a-read-to-an-alignment)
+- [Overlapping mates](#overlapping-mates)
+- [Index and annotation](#index-and-annotation)
+- [Two-pass mapping](#two-pass-mapping)
+- [Solo](#solo)
+- [Threads and output order](#threads-and-output-order)
+- [Other directories](#other-directories)
 
 ## From a read to an alignment
 
@@ -35,15 +45,17 @@ The Solo steps run only when requested. A run without alignment output still com
 
 The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeline/single_end/mapping_composition.cpp) and [pipeline/paired_end/mapping_composition.cpp](pipeline/paired_end/mapping_composition.cpp). Their neighboring `pipeline.cpp` files add selection, record projection, junctions, and statistics. This is the place to review how one stage's output becomes the next stage's input.
 
+[↑ Contents](#contents)
+
 ## Overlapping mates
 
 [pipeline/paired_end/star_overlap.cpp](pipeline/paired_end/star_overlap.cpp) implements `peOverlapNbasesMin` and `peOverlapMMp`. The paired pipeline calls it after ordinary paired candidate mapping and before selection. It searches the two mate offsets using STAR's match/mismatch rule, maps a merged read with a separate single-read workspace, projects blocks back into paired coordinates, and recalculates the paired scores. The original sequences remain available for SAM/BAM output.
 
 [runtime/paired_alignment.cpp](runtime/paired_alignment.cpp) creates this helper only when overlap is enabled. It shares the seed finder, window builder and reference with the normal mapper. The helper does not invoke a complete single-end output pipeline or consume random selection state.
 
-## Index and annotation
+[↑ Contents](#contents)
 
-For the old/new flow and specific sorting, reset, state-ownership, and BAM differences, see [the source comparison](docs/IMPLEMENTATION_COMPARISON.md).
+## Index and annotation
 
 [cli/genome_generate.cpp](cli/genome_generate.cpp) coordinates index building. [reference/genome.cpp](reference/genome.cpp) owns the reference representation. [annotation/gtf_loader.cpp](annotation/gtf_loader.cpp) reads genes, transcripts, and exons; [annotation/junction_database.cpp](annotation/junction_database.cpp) builds the annotated junction data.
 
@@ -55,6 +67,8 @@ During construction, `PackedSuffixArray::packAndRelease` consumes the temporary 
 
 The reference and index are shared between workers. Their owners keep the backing storage alive; per-read stages use views into it. Per-read scratch buffers belong to workers and are reused rather than recreated for each read.
 
+[↑ Contents](#contents)
+
 ## Two-pass mapping
 
 [runtime/two_pass.cpp](runtime/two_pass.cpp) runs pass one with junction collection, filters the junctions, extends the index, and starts pass two from the original input. [index/junction_insert.cpp](index/junction_insert.cpp) and [index/extension.cpp](index/extension.cpp) do the index update. Pass two uses the same mapping pipeline as an ordinary run.
@@ -62,6 +76,8 @@ The reference and index are shared between workers. Their owners keep the backin
 The extended suffix-array merge partitions output ranks into independent packed ranges. Each worker binary-searches the first insertion for its range, merges the old and new entries, and releases consumed old-array pages. This keeps packed writes disjoint.
 
 This split matters when changing the code: junction discovery belongs to the mapping run, while index insertion belongs to `index/`. The two-pass coordinator should not implement another seed search or stitcher.
+
+[↑ Contents](#contents)
 
 ## Solo
 
@@ -87,6 +103,8 @@ Corrected `CB`/`UB` tags can depend on counts from later reads. Coordinate BAM o
 
 Solo's counting algorithms come from STAR. The source has been split into modules and adapted to NuSTAR's pipeline. [solo/UPSTREAM.json](solo/UPSTREAM.json) and [solo/STAR.LICENSE](solo/STAR.LICENSE) keep that origin visible.
 
+[↑ Contents](#contents)
+
 ## Threads and output order
 
 [runtime/ordered_alignment.cpp](runtime/ordered_alignment.cpp) owns the mapping worker loop. Input access is serialized when a worker takes a batch. The expensive mapping work runs outside that input lock.
@@ -96,6 +114,8 @@ Each worker has its own workspace, random state, and temporary output buffers. T
 Batches get sequence numbers. Workers may finish in a different order, but output commits and junction/statistic reductions follow input order. File sinks can spool chunks concurrently and concatenate them later. At most twice the worker count of batches can be in flight, which bounds the reorder backlog when one batch is slow.
 
 Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes bounded runs and merges them, rather than keeping the whole BAM in memory. The runtime releases mapping resources it no longer needs before the remaining counting and sorting work; shared owners can keep resources alive longer, including during two-pass runs.
+
+[↑ Contents](#contents)
 
 ## Other directories
 
@@ -110,3 +130,5 @@ Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes
 | [third_party/](third_party/) | libsais, HTSlib, and other imported code with their licenses. |
 
 For a change to seed search, start with its stage test and then compare full alignments. For a change to counting, compare matrices as well as BAM tags. Equal final record counts alone can hide different alignments or gene assignments. [CONTRIBUTING.md](CONTRIBUTING.md#tests) lists the available test entry points and configuration.
+
+[↑ Contents](#contents)

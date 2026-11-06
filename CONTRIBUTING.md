@@ -71,4 +71,4 @@ Equal record counts alone do not establish equal alignments. State whether your 
 
 Use the [benchmark tools](tools/benchmark/) and consult each script's `--help` output. Save the input identifiers, reference/annotation versions, exact commands, binary hashes, machine and build details, cache conditions, and output checks alongside the measurements. Use repeated runs when making a performance claim, and report variation as well as the summary.
 
-The [benchmark template](docs/BENCHMARKS.md) lists the current reporting fields; the [historical comparison report](docs/STAR_COMPARISON.md) retains older results. Keep performance claims specific to the dataset and output mode you tested.
+The [benchmark template](docs/BENCHMARKS.md) lists the reporting fields. Keep performance claims specific to the dataset and output mode you tested.

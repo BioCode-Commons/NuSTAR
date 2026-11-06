@@ -1,45 +1,37 @@
-# Benchmark template
+# Benchmarks
 
-Current implementation reviewed for documentation: `bdf6bfa`. **Measurements are pending.** Empty fields below are placeholders, not zeroes or passing checks. No benchmark was run as part of this documentation update.
+[README](../readme.md#benchmarks)
 
-## Inputs and machine
+Measurements for the updated implementation are pending.
+
+## Contents
+
+- [Setup](#setup)
+- [Results](#results)
+
+## Setup
 
 | Field | Value |
 | --- | --- |
-| Dataset name, public accession, and download link | To be supplied |
-| Read layout, lengths, and number of reads/pairs | To be supplied |
-| Full library or subset; selection method and seed | To be supplied |
-| Reference FASTA and GTF source/version | To be supplied |
-| CPU model, sockets, cores, and allocated threads | To be supplied |
-| RAM, operating system, and storage | To be supplied |
-| Compiler, build flags, STAR and NuSTAR revisions | To be supplied |
-| Index-build and alignment commands | To be supplied |
-| Cache conditions, run order, and repetitions | To be supplied |
+| Dataset, accession, read layout, and subset selection | To be supplied |
+| Reference FASTA and GTF versions | To be supplied |
+| CPU, RAM, operating system, and storage | To be supplied |
+| Software versions, build flags, and commands | To be supplied |
+| Threads, repetitions, cache state, and run order | To be supplied |
 
-## Runtime and memory
+[↑ Contents](#contents)
 
-Measure both engines with the same inputs, explicit settings, thread count, and output mode. Report repeated wall times and variation, plus peak resident memory. Record index construction separately from alignment; include junction insertion in two-pass timing. Separate node and dataset results instead of pooling them.
+## Results
 
-| Workload | Dataset / threads / repeats | STAR time / RSS | NuSTAR time / RSS | Output comparison |
-| --- | --- | --- | --- | --- |
-| Index construction | Pending | Pending | Pending | Pending |
-| Single-end, one pass | Pending | Pending | Pending | Pending |
-| Paired-end, overlap disabled | Pending | Pending | Pending | Pending |
-| Paired-end, overlap enabled | Pending | Pending | Pending | Pending |
-| Two-pass | Pending | Pending | Pending | Pending |
-| Coordinate-sorted BAM | Pending | Pending | Pending | Pending |
-| Solo counts and corrected BAM tags | Pending | Pending | Pending | Pending |
+| Workload | Runtime | Peak RSS | Output checks |
+| --- | --- | --- | --- |
+| Index construction | Pending | Pending | Pending |
+| Single-end and paired-end alignment | Pending | Pending | Pending |
+| Paired overlap refinement | Pending | Pending | Pending |
+| Two-pass alignment | Pending | Pending | Pending |
+| Sorted BAM | Pending | Pending | Pending |
+| Solo counting and corrected tags | Pending | Pending | Pending |
 
-## Are the outputs identical?
+Record repeated process timings and output checks alongside each result. Check alignment records and tags, junctions, mapping statistics, and requested Solo matrices. Record index construction separately from alignment.
 
-**Not established for the updated implementation by this document.** Added regression tests are available in the source, but their existence is not a result of a fresh benchmark run.
-
-For each measured workload, report decoded alignment records and tag values, the treatment of record order and headers, splice-junction tables, and non-time mapping statistics. Compare both passes and inserted junction tables for two-pass runs. Compare matrices, cell filtering, and corrected tags for Solo. Preserve and describe any differences; equal mapping totals alone are insufficient. Agreement with STAR is a compatibility check, not biological ground-truth accuracy.
-
-## Historical records
-
-- [Earlier STAR comparison](STAR_COMPARISON.md): measurements from older builds, including figures whose input provenance is unresolved.
-- [November 4 Oscar campaign](benchmarks/oscar-20261104/REPORT.md): partial RNA-seq results and a genuine paired-end mismatch from NuSTAR `90de97d`.
-- [Discrepant read fixtures](benchmarks/oscar-20261104/read-discrepancy/discrepant-24-pairs/README.md): debugging evidence from that older run.
-
-These records are retained as evidence. They have not been replaced with fabricated current results, and their conclusions should not be transferred to the updated binaries without rerunning the comparisons.
+[↑ Contents](#contents)
