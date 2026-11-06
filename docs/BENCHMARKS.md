@@ -4,11 +4,6 @@
 
 Measurements for the updated implementation are pending.
 
-## Contents
-
-- [Setup](#setup)
-- [Results](#results)
-
 ## Setup
 
 | Field | Value |
@@ -18,8 +13,6 @@ Measurements for the updated implementation are pending.
 | CPU, RAM, operating system, and storage | To be supplied |
 | Software versions, build flags, and commands | To be supplied |
 | Threads, repetitions, cache state, and run order | To be supplied |
-
-[↑ Contents](#contents)
 
 ## Results
 
@@ -33,5 +26,3 @@ Measurements for the updated implementation are pending.
 | Solo counting and corrected tags | Pending | Pending | Pending |
 
 Record repeated process timings and output checks alongside each result. Check alignment records and tags, junctions, mapping statistics, and requested Solo matrices. Record index construction separately from alignment.
-
-[↑ Contents](#contents)

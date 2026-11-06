@@ -1,20 +1,20 @@
+<div align="center">
+
 # NuSTAR
 
-RNA-seq alignment and single-cell quantification in C++20. NuSTAR supports single-end and paired-end reads, overlap refinement, two-pass mapping, and STARsolo.
+**RNA-seq alignment and single-cell quantification in C++20.**
 
-## Contents
+[Quick start](#quick-start) · [Codebase](#codebase) · [Benchmarks](#benchmarks) · [Roadmap](#roadmap) · [Usage](docs/USAGE.md) · [Community](https://biocode-commons.github.io/)
 
-- [Quick start](#quick-start)
-- [Codebase](#codebase)
-- [Benchmarks](#benchmarks)
-- [Roadmap](#roadmap)
-- [AI use and review](#ai-use-and-review)
-- [Questions and contributions](#questions-and-contributions)
-- [Acknowledgments and references](#acknowledgments-and-references)
+</div>
+
+---
+
+NuSTAR supports single-end and paired-end reads, overlap refinement, two-pass mapping, and STARsolo.
 
 ## Quick start
 
-### Build
+### 1. Build
 
 Requires CMake 3.20+, C++20 and C99 compilers, zlib development files, and Python 3. OpenMP is optional; HTSlib and libsais are bundled.
 
@@ -27,11 +27,16 @@ cmake --build build/release -j 8
 ctest --test-dir build/release --output-on-failure
 ```
 
-[Build options and tests](CONTRIBUTING.md#tests).
+<details>
+<summary><strong>Build configuration</strong></summary>
 
-[↑ Contents](#contents)
+Disable release IPO with `-DNUSTAR_ENABLE_RELEASE_IPO=OFF`. To build without tests, use `-DBUILD_TESTING=OFF` and skip `ctest`; Python is then optional.
 
-### Index
+See [build options and tests](CONTRIBUTING.md#tests).
+
+</details>
+
+### 2. Build a genome index
 
 Supply a reference FASTA and matching GTF.
 
@@ -46,9 +51,7 @@ build/release/nustar --runMode genomeGenerate \
 
 Set `--sjdbOverhang` to read length minus one. Solo gene counting needs GTF annotation tables; small genomes need a smaller `--genomeSAindexNbases`.
 
-[↑ Contents](#contents)
-
-### Align
+### 3. Align paired-end reads
 
 Use a native NuSTAR index and uncompressed FASTQ reads.
 
@@ -66,8 +69,6 @@ build/release/nustar --genomeDir index/human \
 
 Produces sorted BAM, splice junctions, and mapping statistics. See [usage and parameters](docs/USAGE.md) for single-end, two-pass, overlap, and single-cell workflows.
 
-[↑ Contents](#contents)
-
 ## Codebase
 
 | Module | Responsibility |
@@ -82,8 +83,6 @@ Produces sorted BAM, splice junctions, and mapping statistics. See [usage and pa
 
 Read the [code guide](CODE_STRUCTURE.md) for execution flow and entry points; see [supported modes and limits](docs/USAGE.md#compatibility).
 
-[↑ Contents](#contents)
-
 ## Benchmarks
 
 Updated measurements are pending.
@@ -97,32 +96,22 @@ Updated measurements are pending.
 
 [Benchmark template](docs/BENCHMARKS.md).
 
-[↑ Contents](#contents)
-
 ## Roadmap
 
 - Publish repeatable runtime, memory, and output checks.
 - Expand bulk and single-cell validation across datasets and modes.
 - Profile two-pass indexing and extend input/output support.
 
-[↑ Contents](#contents)
-
 ## AI use and review
 
 NuSTAR was developed with AI assistance. Maintainers report comprehensive human code review.
 
-[↑ Contents](#contents)
-
 ## Questions and contributions
 
 Visit [BioCode Commons](https://biocode-commons.github.io/) for projects, contribution guidance, and contact information.
-
-[↑ Contents](#contents)
 
 ## Acknowledgments and references
 
 NuSTAR builds on [STAR](https://github.com/alexdobin/STAR) and STARsolo by Alexander Dobin and collaborators. Please cite the original work using [references.bib](references.bib).
 
 Upstream attribution is recorded in [solo/UPSTREAM.json](solo/UPSTREAM.json); licenses for STAR-derived code, HTSlib, libsais, and Simple Good–Turing are retained in [solo/STAR.LICENSE](solo/STAR.LICENSE) and [third_party/](third_party/).
-
-[↑ Contents](#contents)
