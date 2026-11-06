@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1138" viewBox="0 0 1120 1138" role="img" aria-labelledby="flow-title flow-desc">
 <title id="flow-title">STAR and NuSTAR: end-to-end flow and processing boundaries</title>
-<desc id="flow-desc">STAR and NuSTAR: end-to-end flow and processing boundaries. Source revisions: STAR 2.7.11b and NuSTAR fa16481.</desc>
+<desc id="flow-desc">STAR and NuSTAR: end-to-end flow and processing boundaries. Source revisions: STAR 2.7.11b and NuSTAR bdf6bfa.</desc>
 <style>text{font-family:Arial,Helvetica,sans-serif;font-size:19px;fill:#e6edf3}
 .title{font-size:31px;font-weight:600}.heading{font-size:22px;font-weight:600}
 .mono{font-family:Menlo,Consolas,monospace;font-size:17px}.small{font-size:16px}
@@ -90,7 +90,7 @@
 <text x="854.0" y="931" class="small muted" text-anchor="middle">Solo reduction*, then sorted BAM*</text>
 <rect x="32" y="978" width="1056" height="68" rx="8" fill="#152032" />
 <text x="50" y="1006" class="">Two-pass mode: discover junctions → extend index → reread input for pass two</text>
-<text x="50" y="1031" class="small muted">Both versions use this strategy; each pass uses the read-mapping stages above.</text>
+<text x="50" y="1031" class="small muted">NuSTAR now merges inserted suffixes in parallel output-rank chunks.</text>
 <text x="32" y="1080" class="small muted">* Optional. Profiling paths, error exits, and unsupported STAR features are omitted.</text>
 <text x="32" y="1107" class="small muted">Both implementations already process reads in worker-owned chunks; NuSTAR makes stage data explicit.</text>
 </svg>

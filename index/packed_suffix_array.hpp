@@ -69,8 +69,52 @@ public:
     // calloc keeps untouched large pages uncommitted. Used by the streaming
     // junction merge, where an eagerly cleared second SA doubles peak RSS.
     static PackedSuffixArray lazyZeroed(std::size_t count,std::uint8_t width);
+    // Consume construction-only positions. On Linux, return fully consumed
+    // source pages while filling the packed array, instead of retaining both.
+    static PackedSuffixArray packAndRelease(std::vector<std::uint64_t> values,
+                                             std::uint64_t physical_length);
     // Advisory only: immutable file contents remain readable after discard.
     void discardReadPages(std::size_t first_rank,std::size_t past_rank) const;
+
+    // Writes consecutive ranks of zeroed owned storage, one whole 64-bit word
+    // at a time. The first rank must be a multiple of 64, so the range starts
+    // on a word boundary; a range that also ends at a multiple of 64 (or at
+    // the last rank) touches no byte outside itself. Writers of disjoint such
+    // ranges can therefore run on different threads.
+    class RangeWriter {
+    public:
+        void put(std::uint64_t value) noexcept {
+            word_ |= value << bits_;
+            bits_ += width_;
+            if (bits_ >= 64) {
+                store(word_);
+                bits_ -= 64;
+                word_ = bits_ ? value >> (width_-bits_) : 0;
+            }
+        }
+        // Stores the bytes of a final partial word.
+        void finish() noexcept {
+            for (unsigned i = 0; 8*i < bits_; ++i)
+                out_[i] = static_cast<std::uint8_t>(word_ >> (8*i));
+            bits_ = 0; word_ = 0;
+        }
+    private:
+        friend class PackedSuffixArray;
+        RangeWriter(std::uint8_t* out, std::uint8_t width) : out_(out), width_(width) {}
+        void store(std::uint64_t word) noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                std::memcpy(out_, &word, sizeof(word));
+            else
+                for (unsigned i = 0; i < 8; ++i)
+                    out_[i] = static_cast<std::uint8_t>(word >> (8*i));
+            out_ += 8;
+        }
+        std::uint8_t* out_;
+        unsigned width_;
+        unsigned bits_ = 0;
+        std::uint64_t word_ = 0;
+    };
+    RangeWriter rangeWriter(std::size_t first_rank);
 
     // As in STAR PackedArray.h, expose this tiny hot accessor to the compiler
     // and retain the mask with the layout. memcpy permits unaligned loads

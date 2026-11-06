@@ -1,8 +1,8 @@
 # STAR and NuSTAR: flow and implementation differences
 
-[Back to the README](../readme.md#implementation-status) · [Code guide](../CODE_STRUCTURE.md) · [Output comparisons](STAR_COMPARISON.md)
+[Back to the README](../readme.md#implementation-status) · [Code guide](../CODE_STRUCTURE.md) · [Benchmark status](BENCHMARKS.md)
 
-This comparison reads STAR **2.7.11b**, revision [`b1edc12`](https://github.com/alexdobin/STAR/tree/b1edc1208d91a53bf40ebae8669f71d50b994851), against NuSTAR revision [`fa16481`](https://github.com/BioCode-Commons/NuSTAR/tree/fa1648142582107665f1ff562d62666c6d8b61cb). The figures show specific mechanisms found in those sources. The abbreviated code below describes control flow; it is not a patch that can be applied between the repositories.
+This comparison reads STAR **2.7.11b**, revision [`b1edc12`](https://github.com/alexdobin/STAR/tree/b1edc1208d91a53bf40ebae8669f71d50b994851), against NuSTAR revision [`bdf6bfa`](https://github.com/BioCode-Commons/NuSTAR/tree/bdf6bfa7d465c965edac091c6f13d292a81be1ef). The figures show specific mechanisms found in those sources. The abbreviated code below describes control flow; it is not a patch that can be applied between the repositories.
 
 ## End-to-end flows
 
@@ -19,17 +19,17 @@ The NuSTAR lane expands the normal single-end path through `runOrderedAlignment`
 
 ## Implementation differences
 
-![Four implementation differences: suffix sorting, window reset, intermediate state, and BAM sorting](assets/implementation-differences.svg)
+![Implementation differences in sorting, reset, pipeline state, BAM output, two-pass merging, overlapping mates, and annotation](assets/implementation-differences.svg)
 
 ### 1. Suffix-array construction
 
 **STAR:** count prefix ranges, divide them into chunks, collect suffix offsets for each chunk, call `qsort` with `funCompareSuffixes`, and write the sorted chunk to a temporary `SA_i` file. Read those chunks back in order and pack the suffix array. The comparator includes STAR's finite comparison length and chromosome-padding behavior.
 
-**NuSTAR:** the default production path calls `libsais64` or its OpenMP variant to construct the initial suffix order. It removes suffix starts that are not ordinary bases, normalizes STAR-equivalent groups, builds prefix ranges, and packs the native index. Normalization still uses `std::sort` within groups that STAR treats as equal, ordered by the translated STAR coordinate. Replacing initial suffix construction therefore does not remove all comparison sorts from the builder.
+**NuSTAR:** the default production path calls `libsais64` or its OpenMP variant to construct the initial suffix order. It removes suffix starts that are not ordinary bases, normalizes STAR-equivalent groups, packs and releases the temporary suffix positions, then builds prefix ranges for the native index. Normalization still uses `std::sort` within groups that STAR treats as equal, ordered by the translated STAR coordinate. Replacing initial suffix construction therefore does not remove all comparison sorts from the builder.
 
 ```text
 STAR:    prefix chunks → qsort(custom suffix comparator) → disk chunks → pack
-NuSTAR:  libsais64 → filter starts → normalize STAR ranks → prefix ranges → pack
+NuSTAR:  libsais64 → filter starts → normalize STAR ranks → pack/release → prefix ranges
 ```
 
 The distinction matters for compatibility: a plain lexicographic suffix order is not sufficient to reproduce every STAR rank choice. NuSTAR also retains a separate 32-bit builder interface; `index/sais.cpp` is not the default production path shown here. The two programs' binary index formats remain different.
@@ -87,3 +87,39 @@ Sources: [STAR per-bin sorting](https://github.com/alexdobin/STAR/blob/b1edc1208
 ## How to interpret the figures
 
 These are source comparisons, not new performance measurements. End-to-end benchmarks cannot isolate the speed of suffix construction, bin clearing, stitching, or BAM sorting. Use the [runtime and correctness report](STAR_COMPARISON.md) for measured workloads and the scope of the output comparisons. Solo retains STAR-derived algorithms; splitting its code into modules does not mean all of those algorithms were independently redesigned.
+
+## Changes in the updated implementation
+
+These changes are present in `bdf6bfa`; this source review does not establish their end-to-end performance or a new real-data compatibility result.
+
+### 5. Two-pass suffix-array merge
+
+STAR 2.7.11b's `sjdbBuildIndex.cpp` walks the existing suffix array and inserts new junction suffixes at their ranked positions. The updated NuSTAR implementation partitions the **output ranks** into chunks of `1 << 22` entries. An insertion numbered `k` belongs at `min(insertion.rank, old_count) + k`; a binary search counts the insertions before each chunk's starting rank. That gives the chunk its old-array cursor and insertion cursor without waiting for preceding chunks.
+
+An OpenMP loop with dynamic scheduling merges each chunk through its own `RangeWriter`. Chunk boundaries are multiples of 64 ranks, so workers do not share a byte in the packed output. Workers release consumed old-index pages; a final discard handles pages shared by neighboring chunks. This changes the merge structure and allocation lifetime, while retaining rank-based insertion ordering. OpenMP availability and available work determine actual parallel execution; no measured speedup is claimed.
+
+Sources: [STAR merge](https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/sjdbBuildIndex.cpp), [NuSTAR merge](../index/junction_insert.cpp), [packed range writer](../index/packed_suffix_array.hpp).
+
+### 6. Paired-end overlap mapping
+
+The updated NuSTAR runtime can create an `IPairedOverlapRefiner` when `peOverlapNbasesMin` is nonzero. Ordinary paired candidate mapping runs first. The helper searches mate offsets using STAR's match/mismatch rule: ambiguous bases count as mismatches, and the threshold uses mismatches divided by matches. It maps a merged sequence through a separate `ISingleCandidateMapper` workspace, projects aligned blocks back to mate coordinates, and recalculates scores before paired selection.
+
+This is an adaptation of STAR's overlap strategy, not a newly claimed overlap algorithm. The helper does not invoke a full single-end output pipeline or consume its random selection state. Original mate sequences remain available to SAM/BAM output. `peOverlapNbasesMin` defaults to `0` (disabled), and `peOverlapMMp` to `0.01`.
+
+The new [paired-overlap differential fixture](../tests/integration/paired_overlap.py) covers several thresholds, mismatches, ambiguous bases, indels, mate geometries, clipping, and two-pass mode at 1 and 4 threads. The fixture defines comparisons; this documentation update does not report them as freshly executed tests.
+
+Sources: [STAR overlap mapping](https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_peOverlapMergeMap.cpp), [NuSTAR helper](../pipeline/paired_end/star_overlap.cpp), [paired runtime](../runtime/paired_alignment.cpp).
+
+### 7. Junction strand preparation
+
+Annotation proposals are first sorted by strand group and normalized coordinates. NuSTAR then deduplicates normalized coordinates and performs a second coordinate-ordered selection pass. The updated winner rules account for proposal priority, supplied versus undefined strand, and canonical versus noncanonical motifs. In the second pass, priority is compared with the previous sorted proposal even when that proposal was skipped. Strand resolution is recorded before emitting the final entries.
+
+These details affect which annotated junction sequence enters the index, so they can affect later seed matches and candidate selection. The source includes [strand unit fixtures](../tests/annotation/junction_strand.cpp) and a [STAR differential fixture](../tests/integration/junction_strand.py). The earlier K562 discrepancy is retained as historical evidence; it has not been rerun against this revision here, and this document does not claim it is resolved.
+
+Sources: [STAR junction preparation](https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/sjdbPrepare.cpp), [NuSTAR junction preparation](../annotation/junction_database.cpp).
+
+### Index construction and statistics
+
+`PackedSuffixArray::packAndRelease` consumes temporary 64-bit positions and releases complete source pages on Linux. Prefix ranges are constructed after that temporary array is freed. The CLI also releases construction owners before reloading the persisted reference/index for verification. These are memory-lifetime changes, not current peak-RSS measurements. See [packing](../index/packed_suffix_array.cpp), [build order](../index/suffix_array_index.cpp), and [reload verification](../cli/genome_generate.cpp).
+
+The updated [statistics collector](../statistics/star_statistics.cpp) uses clipped mate lengths for input-base counts, following STAR's convention. This changes the interpretation of statistics for clipped inputs; it is separate from the alignment-record comparison.

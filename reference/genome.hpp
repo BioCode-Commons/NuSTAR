@@ -37,6 +37,8 @@ public:
     // STAR Genome.G layout: forward chromosomes followed by synthetic SJ bases.
     // One immutable, reference-owned buffer shared by seed and stitch modules.
     // The span remains valid for the lifetime of this reference's lease.
+    // The owner also keeps 20 padding bases outside each end of the span;
+    // STAR-style suffix comparisons can step into those guards via data().
     std::span<const BaseCode> starGenome() const;
 
 private:

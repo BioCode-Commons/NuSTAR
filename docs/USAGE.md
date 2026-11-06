@@ -31,6 +31,18 @@ Pass one discovers junctions. NuSTAR inserts accepted junction sequences into th
 - `--sjdbInsertSave All` also saves the updated native index.
 - Input must remain available for both passes.
 
+### Overlapping paired-end reads
+
+To enable overlap merge/remapping, add these options to a paired-end command:
+
+```sh
+--peOverlapNbasesMin 20 --peOverlapMMp 0.01
+```
+
+`20` is an example overlap threshold, not a benchmark-derived recommendation. The default `--peOverlapNbasesMin 0` disables the helper. `--peOverlapMMp` defaults to `0.01` and accepts values greater than or equal to zero and less than one. The overlap search counts ambiguous bases as mismatches and uses mismatches divided by matches, following STAR's rule.
+
+NuSTAR maps a merged sequence in a separate workspace, projects its blocks back to the two mates, and recalculates paired scores before selection. Original read sequences remain available for SAM/BAM output. This is a paired-end mapping feature, not adapter clipping.
+
 ### Single-cell: 10x 3′ v3
 
 For this layout, **R2 contains RNA** and **R1 contains a 16-base cell barcode followed by a 12-base UMI**. Supply the barcode FASTQ last and use the whitelist for your chemistry.
@@ -134,7 +146,7 @@ NuSTAR follows STAR option names and argument forms where implemented. It is a p
 | Area | Implemented | Missing or limited |
 | --- | --- | --- |
 | Index | FASTA/GTF loading, packed suffix array, annotation tables, incremental junction insertion | Loading STAR's binary index; STAR shared-memory load/remove modes. |
-| Mapping | Single-end and paired-end spliced alignment, seed/window/stitch/select stages, fixed clipping, `Basic` two-pass | Chimeric/fusion alignment, WASP/VCF workflows, adapter clipping, most configurable STAR scoring and filtering options. |
+| Mapping | Single-end and paired-end spliced alignment, seed/window/stitch/select stages, fixed clipping, optional paired overlap merge/remapping, `Basic` two-pass | Chimeric/fusion alignment, WASP/VCF workflows, adapter clipping, most configurable STAR scoring and filtering options. |
 | Input | Plain FASTQ; direct SAM/BAM; SmartSeq manifests | Compressed FASTQ, FASTA reads, comma-separated file groups, `readFilesCommand`, general manifest input outside SmartSeq. |
 | Output | SAM, unsorted/sorted BAM, junction tables, mapping statistics | CRAM as a supported interface, BAI/CSI generation, transcriptome BAM, bulk `GeneCounts`, signal tracks, all STAR header/tag customization. BAM read names are limited to 254 bytes and CIGARs to 65,535 operations. |
 | Solo | Barcode extraction/correction, UMI deduplication, gene/SJ/velocity counting, cell filtering, matrix output, SmartSeq, corrected BAM tags | Full validation of every mode/parameter combination on real single-cell datasets; `Transcript3p` remains less tested. |
@@ -160,7 +172,7 @@ Expand a group for defaults, accepted values, and constraints.
 | `--sjdbOverhang N` | `100` | Junction flank length, used when building or extending the index. |
 | `--genomeChrBinNbits N` | `18` | Chromosome padding/bin bits, 8–30. |
 | `--genomeSAindexNbases N` | `14` | SA prefix length, 1–15. Reduce for small genomes. |
-| `--limitSjdbInsertNsj N` | `1000000` | Total junction count after insertion, including existing junctions. The full human test requires at least 1,237,619; both programs were tested with 2,000,000. |
+| `--limitSjdbInsertNsj N` | `1000000` | Total junction count after insertion, including existing junctions. Choose a value large enough for the intended annotation and discovered junctions; this is not a current benchmark result. |
 | `--sjdbGTFchrPrefix TEXT` | `-` | Prefix for GTF chromosome names; `-` adds nothing. |
 | `--sjdbGTFfeatureExon NAME` | `exon` | GTF feature used as an exon. |
 | `--sjdbGTFtagExonParentTranscript NAME` | `transcript_id` | Transcript attribute. |
@@ -175,6 +187,8 @@ Expand a group for defaults, accepted values, and constraints.
 
 | Option | Default | Use |
 | --- | --- | --- |
+| `--peOverlapNbasesMin N` | `0` | Minimum overlap for paired merge/remapping; zero disables it. Mapping option, not an index-build setting. |
+| `--peOverlapMMp F` | `0.01` | Overlap mismatch/match ratio; `0 <= F < 1`. |
 | `--readFilesIn FILE...` | required unless using a manifest | One or two RNA FASTQ files, followed by a separate barcode file when needed; or one SAM/BAM file. |
 | `--readFilesManifest FILE` | none | SmartSeq input groups. |
 | `--readFilesType Fastx` or `SAM SE/PE` | `Fastx` | FASTQ, or SAM/BAM with the specified mate layout. FASTA reads are not implemented. |

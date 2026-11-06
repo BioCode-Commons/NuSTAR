@@ -50,7 +50,7 @@ cmake --build build/star-comparison -j 8
 ctest --test-dir build/star-comparison --output-on-failure
 ```
 
-This configuration adds the junction-padding, two-pass, Solo, Solo-mode, BAM, and paired-flag comparison suites. They build their own small indexes. CTest manages their shared fixtures and ordering.
+This configuration adds junction-strand, paired-overlap, junction-padding, two-pass, Solo, Solo-mode, BAM, and paired-flag comparison suites. They build their own small indexes. CTest manages their shared fixtures and ordering.
 
 Other index and mapping-stage comparisons use separate settings, including `NUSTAR_STAR_BASELINE`, index paths, or instrumented STAR binaries. Read [tests/CMakeLists.txt](tests/CMakeLists.txt) and the relevant scripts in [tests/integration/](tests/integration/) before enabling them; some defaults refer to data outside this repository. The [oracle tools](tools/oracle/) build instrumented STAR binaries for stage comparisons.
 
@@ -71,4 +71,4 @@ Equal record counts alone do not establish equal alignments. State whether your 
 
 Use the [benchmark tools](tools/benchmark/) and consult each script's `--help` output. Save the input identifiers, reference/annotation versions, exact commands, binary hashes, machine and build details, cache conditions, and output checks alongside the measurements. Use repeated runs when making a performance claim, and report variation as well as the summary.
 
-The [existing comparison report](docs/STAR_COMPARISON.md) explains the scope of the saved results and the missing evidence. Keep performance claims specific to the dataset and output mode you tested.
+The [benchmark template](docs/BENCHMARKS.md) lists the current reporting fields; the [historical comparison report](docs/STAR_COMPARISON.md) retains older results. Keep performance claims specific to the dataset and output mode you tested.

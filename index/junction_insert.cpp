@@ -1,6 +1,7 @@
 #include "junction_insert.hpp"
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <limits>
 #include <tuple>
 
@@ -24,10 +25,13 @@ U insertionRank(const std::vector<std::uint8_t>& sj, U offset,
     const auto genome=reference.starGenome();
     auto compare=[&](U rank, U matched) {
         const auto location=locate(sa[rank],real,syn);
+        // Like STAR's g[-ii], comparison may reach the reference-owned guard
+        // just before/after the genome span. The first padding byte stops it.
+        const auto* suffix=genome.data()+location.position;
         for (;matched<10000;++matched) {
             const auto q=sj[offset+matched];
-            auto g=static_cast<std::uint8_t>(genome[location.reverse ?
-                location.position-matched : location.position+matched]);
+            const auto distance=static_cast<std::ptrdiff_t>(matched);
+            auto g=static_cast<std::uint8_t>(suffix[location.reverse ? -distance : distance]);
             if (location.reverse && g<4) g=3-g;
             if (q!=g) return std::pair{matched,q>g ? 1 : -1};
             if (q==5) return std::pair{matched,location.reverse ? -1 : 1};
@@ -106,12 +110,8 @@ Result<SearchIndexLease> insertJunctions(const SuffixArrayIndex& old_index,
         const U physical=2*(real+size)+80;
         auto sa=PackedSuffixArray::lazyZeroed(old_sa.size()+insertions.size(),PackedSuffixArray::widthFor(physical));
         auto newPosition=[&](U p) {return p<size ? 2*real+40+p : 2*real+60+p;};
-        U next=0,out=0,discarded=0;
-        for(U rank=0;rank<old_sa.size();++rank) {
-            while(next<insertions.size() && insertions[next].rank==rank)
-                sa.set(out++,newPosition(insertions[next++].position));
-            U p=old_sa[rank];
-            const auto old_size=old_reference.synthetic().size();
+        const auto old_size=old_reference.synthetic().size();
+        auto oldPosition=[&](U p) {
             if(p>=2*real+40 && p<2*real+40+old_size) {
                 const U relative=p-(2*real+40);
                 p=2*real+40+old_to_new[relative/stride]*stride+relative%stride;
@@ -120,13 +120,42 @@ Result<SearchIndexLease> insertJunctions(const SuffixArrayIndex& old_index,
                 const U old_id=previous.size()-1-relative/stride;
                 p=2*real+60+size+(entries.size()-1-old_to_new[old_id])*stride+relative%stride;
             }
-            sa.set(out++,p);
-            if((rank&((1ULL<<20)-1))==((1ULL<<20)-1)) {
-                old_sa.discardReadPages(discarded,rank+1);discarded=rank+1;
+            return p;
+        };
+        // Old suffixes keep their order and each insertion goes before the old
+        // suffix of its rank (after all of them for U(-2)), so insertion k lands
+        // at output rank min(rank,old_count)+k. That rank grows with k, which
+        // lets each chunk find its first insertion by binary search and merge
+        // its output ranks without the chunks before it.
+        const U old_count=old_sa.size(), total=old_count+insertions.size();
+        auto insertionsBefore=[&](U output_rank) {
+            U low=0,high=insertions.size();
+            while(low<high) {
+                const U k=low+(high-low)/2;
+                if(std::min(insertions[k].rank,old_count)+k<output_rank) low=k+1; else high=k;
             }
+            return low;
+        };
+        // A multiple of 64 ranks, so the chunks' RangeWriters share no byte.
+        constexpr U chunk=U(1)<<22;
+        const U chunks=(total+chunk-1)/chunk;
+        #pragma omp parallel for num_threads(threads) schedule(dynamic,1)
+        for(U c=0;c<chunks;++c) {
+            const U begin=c*chunk,end=std::min(total,begin+chunk);
+            U next=insertionsBefore(begin),rank=begin-next;
+            const U first_old=rank;
+            auto writer=sa.rangeWriter(begin);
+            for(U out=begin;out<end;++out) {
+                if(next<insertions.size() && std::min(insertions[next].rank,old_count)==rank)
+                    writer.put(newPosition(insertions[next++].position));
+                else
+                    writer.put(oldPosition(old_sa[rank++]));
+            }
+            writer.finish();
+            old_sa.discardReadPages(first_old,rank);
         }
-        old_sa.discardReadPages(discarded,old_sa.size());
-        for(;next<insertions.size();++next) sa.set(out++,newPosition(insertions[next].position));
+        // Chunk discards keep pages shared by neighbouring chunks; drop them now.
+        old_sa.discardReadPages(0,old_count);
 
         // Port of the SAi update in sjdbBuildIndex; preserves old N flags.
         const auto& old_prefix=old_index.prefixIndex();

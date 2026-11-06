@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1160" viewBox="0 0 1120 1160" role="img" aria-labelledby="differences-title differences-desc">
-<title id="differences-title">Four source-level implementation differences between STAR and NuSTAR</title>
-<desc id="differences-desc">Four source-level implementation differences between STAR and NuSTAR. Source revisions: STAR 2.7.11b and NuSTAR fa16481.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1868" viewBox="0 0 1120 1868" role="img" aria-labelledby="differences-title differences-desc">
+<title id="differences-title">Source-level implementation differences between STAR and NuSTAR</title>
+<desc id="differences-desc">Source-level implementation differences between STAR and NuSTAR. Source revisions: STAR 2.7.11b and NuSTAR bdf6bfa.</desc>
 <style>text{font-family:Arial,Helvetica,sans-serif;font-size:19px;fill:#e6edf3}
 .title{font-size:31px;font-weight:600}.heading{font-size:22px;font-weight:600}
 .mono{font-family:Menlo,Consolas,monospace;font-size:17px}.small{font-size:16px}
 .muted{fill:#9da7b3}.green{fill:#7ee787}.blue{fill:#79c0ff}.amber{fill:#e3b341}
 .eyebrow{font-size:15px;letter-spacing:1.6px;fill:#9da7b3}.nodeLabel{font-size:19px;font-weight:600}
 </style>
-<rect x="0" y="0" width="1120" height="1160" rx="14" fill="#0d1117" />
+<rect x="0" y="0" width="1120" height="1868" rx="14" fill="#0d1117" />
 <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#6e7681"/></marker></defs>
 <text x="32" y="37" class="eyebrow">02 / IMPLEMENTATION DIFFERENCES</text>
 <text x="32" y="80" class="title">What actually changed inside the pipeline.</text>
@@ -25,12 +25,12 @@
 <text x="578" y="231" class="mono green">+ libsais64(...) / libsais64_omp(...)</text>
 <text x="578" y="256" class="mono green">+ filter non-base suffix starts</text>
 <text x="578" y="281" class="mono green">+ normalize STAR-equal suffix groups</text>
-<text x="578" y="306" class="mono green">+ build prefix ranges → pack SA</text>
-<text x="44" y="343" class="small muted">Induced sorting supplies the initial order; std::sort still orders STAR-equal groups.</text>
+<text x="578" y="306" class="mono green">+ pack + release → build prefix ranges</text>
+<text x="44" y="343" class="small muted">STAR-equal groups still use std::sort; Linux source pages are released during packing.</text>
 <a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/Genome_genomeGenerate.cpp#L213-L325" target="_blank">
 <text x="882" y="169" class="small blue">STAR source</text>
 </a>
-<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/index/suffix_array_index.cpp#L271-L291" target="_blank">
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/index/suffix_array_index.cpp#L271-L291" target="_blank">
 <text x="984" y="169" class="small green">NuSTAR</text>
 </a>
 </g>
@@ -51,7 +51,7 @@
 <a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_stitchPieces.cpp#L12-L16" target="_blank">
 <text x="882" y="405" class="small blue">STAR source</text>
 </a>
-<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/window/star_window.cpp#L39-L57" target="_blank">
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/window/star_window.cpp#L39-L57" target="_blank">
 <text x="984" y="405" class="small green">NuSTAR</text>
 </a>
 </g>
@@ -73,7 +73,7 @@
 <a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_mapOneRead.cpp#L34-L118" target="_blank">
 <text x="882" y="641" class="small blue">STAR source</text>
 </a>
-<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/pipeline/single_end/mapping_composition.cpp#L72-L98" target="_blank">
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/pipeline/single_end/mapping_composition.cpp#L72-L98" target="_blank">
 <text x="984" y="641" class="small green">NuSTAR</text>
 </a>
 </g>
@@ -95,11 +95,76 @@
 <a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/BAMbinSortByCoordinate.cpp#L12-L52" target="_blank">
 <text x="882" y="877" class="small blue">STAR source</text>
 </a>
-<a href="https://github.com/BioCode-Commons/NuSTAR/blob/fa1648142582107665f1ff562d62666c6d8b61cb/bam/sink.cpp#L86-L121" target="_blank">
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/bam/sink.cpp#L86-L121" target="_blank">
 <text x="984" y="877" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-4" data-difference="4">
+<rect x="24" y="1084" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="1114" class="heading">@@ 05  Two-pass suffix-array merge @@</text>
+<text x="44" y="1139" class="small muted">serial merge loop → independent output-rank chunks</text>
+<rect x="25" y="1151" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="1151" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="1175" class="mono">− walk the old suffix array in order</text>
+<text x="45" y="1200" class="mono">− insert ranked junction suffixes</text>
+<text x="45" y="1225" class="mono">− writePacked() into the extended SA</text>
+<text x="578" y="1175" class="mono green">+ partition output ranks into chunks</text>
+<text x="578" y="1200" class="mono green">+ binary-search first insertion per chunk</text>
+<text x="578" y="1225" class="mono green">+ OpenMP: merge with a RangeWriter</text>
+<text x="578" y="1250" class="mono green">+ discard consumed old-SA pages</text>
+<text x="44" y="1287" class="small muted">Chunks are aligned so packed writes share no bytes. No speedup is asserted here.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/sjdbBuildIndex.cpp" target="_blank">
+<text x="882" y="1113" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/index/junction_insert.cpp" target="_blank">
+<text x="984" y="1113" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-5" data-difference="5">
+<rect x="24" y="1320" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="1350" class="heading">@@ 06  Overlapping paired-end reads @@</text>
+<text x="44" y="1375" class="small muted">STAR overlap strategy → separate typed mapper workspace</text>
+<rect x="25" y="1387" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="1387" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="1411" class="mono">− peOverlapMergeMap() finds overlap</text>
+<text x="45" y="1436" class="mono">− merge mates → mapOneRead()</text>
+<text x="45" y="1461" class="mono">− convert alignment back to mates</text>
+<text x="45" y="1486" class="mono">− recalculate paired alignment score</text>
+<text x="578" y="1411" class="mono green">+ map paired candidates first</text>
+<text x="578" y="1436" class="mono green">+ overlap helper → single-read mapper</text>
+<text x="578" y="1461" class="mono green">+ project merged blocks back to mates</text>
+<text x="578" y="1486" class="mono green">+ rescore → paired selection / output</text>
+<text x="44" y="1523" class="small muted">NuSTAR defaults to overlap disabled. It keeps original mate sequences for output.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/ReadAlign_peOverlapMergeMap.cpp" target="_blank">
+<text x="882" y="1349" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/pipeline/paired_end/star_overlap.cpp" target="_blank">
+<text x="984" y="1349" class="small green">NuSTAR</text>
+</a>
+</g>
+<g id="difference-6" data-difference="6">
+<rect x="24" y="1556" width="1072" height="220" rx="8" fill="#161b22" stroke="#30363d" />
+<text x="44" y="1586" class="heading">@@ 07  Annotation strand and winner selection @@</text>
+<text x="44" y="1611" class="small muted">STAR preparation rules → explicit proposal passes</text>
+<rect x="25" y="1623" width="535" height="112" rx="0" fill="#231b23" />
+<rect x="560" y="1623" width="535" height="112" rx="0" fill="#12251f" />
+<text x="45" y="1647" class="mono">− sjdbPrepare(): order by strand / locus</text>
+<text x="45" y="1672" class="mono">− deduplicate normalized coordinates</text>
+<text x="45" y="1697" class="mono">− resolve motif / strand / priority</text>
+<text x="45" y="1722" class="mono">− build annotated junction sequences</text>
+<text x="578" y="1647" class="mono green">+ stable_sort proposals by strand / locus</text>
+<text x="578" y="1672" class="mono green">+ first-pass normalized deduplication</text>
+<text x="578" y="1697" class="mono green">+ second-pass priority / strand rules</text>
+<text x="578" y="1722" class="mono green">+ emit selected junction entries</text>
+<text x="44" y="1759" class="small muted">The updated rules have synthetic regression fixtures; real-data reruns remain pending.</text>
+<a href="https://github.com/alexdobin/STAR/blob/b1edc1208d91a53bf40ebae8669f71d50b994851/source/sjdbPrepare.cpp" target="_blank">
+<text x="882" y="1585" class="small blue">STAR source</text>
+</a>
+<a href="https://github.com/BioCode-Commons/NuSTAR/blob/bdf6bfa7d465c965edac091c6f13d292a81be1ef/annotation/junction_database.cpp" target="_blank">
+<text x="984" y="1585" class="small green">NuSTAR</text>
 </a>
 </g>
 <g id="difference-focus" opacity="0"><rect x="25" y="140" width="1070" height="220" rx="8" fill="none" stroke="#58a6ff" stroke-width="2"/><rect x="25" y="140" width="4" height="220" rx="0" fill="#58a6ff" /></g>
 <circle id="difference-travel" cx="543" cy="263" r="4" fill="#79c0ff" opacity="0"/>
-<text x="32" y="1122" class="small muted">Source changes explain mechanisms. They do not measure the speedup of an individual stage.</text>
+<text x="32" y="1830" class="small muted">Source changes explain mechanisms. They do not measure the speedup of an individual stage.</text>
 </svg>

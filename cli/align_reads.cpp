@@ -6,6 +6,7 @@
 #include "align_single.hpp"
 
 #include <charconv>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -72,6 +73,17 @@ int runAlignReads(int argc, char** argv) {
                 if (parsed.ec != std::errc{} || parsed.ptr != token.data() + token.size() ||
                     runThreadN == 0 || runThreadN > 256)
                     throw std::invalid_argument("--runThreadN must be between 1 and 256");
+            } else if (flag == "--peOverlapNbasesMin") {
+                const auto token=value();
+                const auto parsed=std::from_chars(token.data(),token.data()+token.size(),control.overlap.peOverlapNbasesMin);
+                if (parsed.ec!=std::errc{} || parsed.ptr!=token.data()+token.size())
+                    throw std::invalid_argument("invalid --peOverlapNbasesMin");
+            } else if (flag == "--peOverlapMMp") {
+                const auto token=value();
+                const auto parsed=std::from_chars(token.data(),token.data()+token.size(),control.overlap.peOverlapMMp);
+                if (parsed.ec!=std::errc{} || parsed.ptr!=token.data()+token.size() ||
+                    !std::isfinite(control.overlap.peOverlapMMp) || control.overlap.peOverlapMMp<0 || control.overlap.peOverlapMMp>=1)
+                    throw std::invalid_argument("--peOverlapMMp must be >=0 and <1");
             } else if (flag == "--outSAMtype") {
                 const auto type = value();
                 if (type != "SAM" && type != "None" && type != "BAM")

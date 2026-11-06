@@ -15,7 +15,7 @@ Result<StatsDelta> deriveStatistics(const MappingRead& read,
     StatsDelta delta{};
     delta.reads = 1;
     for (const auto& mate : read.mates)
-        delta.read_bases += mate.original_length;
+        delta.read_bases += mate.clipped_length; // STAR counts readLength after clipping.
 
     switch (decision.reason) {
     case UnmappedReason::None: break;

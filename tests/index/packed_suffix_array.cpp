@@ -63,8 +63,34 @@ int main() {
                 reloaded[0] != values[0] ||
                 reloaded[values.size()-1] != values.back())
                 throw std::runtime_error("packed SA reload differs");
+            // 64-aligned ranges written in reverse order, as parallel chunks may
+            // finish, must produce the same bytes as one sequential pass.
+            auto ranged=PackedSuffixArray::lazyZeroed(values.size(),width);
+            for (std::size_t begin=(values.size()-1)/64*64;;begin-=64) {
+                auto writer=ranged.rangeWriter(begin);
+                for (std::size_t i=begin;i<std::min(values.size(),begin+64);++i)
+                    writer.put(values[i]);
+                writer.finish();
+                if (begin==0) break;
+            }
+            if (!std::ranges::equal(ranged.packedBytes(), expected))
+                throw std::runtime_error("range writers differ from sequential packing");
+            try {
+                ranged.rangeWriter(1);
+                throw std::runtime_error("unaligned range writer accepted");
+            } catch (const std::invalid_argument&) {}
         }
         const std::uint64_t human_physical = 6'200'000'000ULL;
+        {
+            // Cross the source-page release boundary, with values above 32 bits.
+            std::vector<std::uint64_t> source((1U<<20)+257);
+            for (std::size_t i=0;i<source.size();++i) source[i]=(i*104729ULL)%human_physical;
+            const auto count=source.size();
+            auto consumed=PackedSuffixArray::packAndRelease(std::move(source),human_physical);
+            for (std::size_t i=0;i<count;++i)
+                if (consumed[i]!=(i*104729ULL)%human_physical)
+                    throw std::runtime_error("consuming pack lost values at a released source page");
+        }
         const std::vector<std::uint64_t> human_values{
             0, 4'294'967'296ULL, human_physical-1, 4'900'000'001ULL};
         const PackedSuffixArray human(human_values, human_physical);

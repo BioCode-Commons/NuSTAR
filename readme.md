@@ -88,81 +88,34 @@ More examples—including single-end, two-pass, 10x, SmartSeq, and SAM/BAM input
 
 ## Benchmarks
 
-### Oscar RNA-seq campaign: partial results
+**Pending a new benchmark of the updated implementation.** Runtime, peak memory, and output-equivalence results will be added after the current binaries are measured together. No current speedup or full compatibility claim is made here.
 
-The November 4 campaign tested the documented K562 RNA-seq subset with NuSTAR `90de97d` and STAR 2.7.11b on the same Oscar node. Single-end runs with no SAM/BAM output passed exact junction-file and non-time statistics comparisons at 1, 8, and 32 threads, with three repetitions each. At 32 threads, median process time was **31.17 s for STAR and 21.49 s for NuSTAR**; median peak RSS was **30.78 GiB and 28.05 GiB**, respectively.
-
-**The first paired-end comparison failed.** Both programs processed ten million pairs, but two junction-support rows and some mapping statistics differ. The campaign stopped and its dependent full-data jobs were cancelled. Two-pass, BAM, Solo, and full-library results are not available from this campaign. These partial measurements do not establish full output compatibility. See the [measured results, mismatch details, and raw evidence](docs/benchmarks/oscar-20261104/REPORT.md).
-
-### Historical measurements
-
-The results below come from the repository's [runtime and correctness report](docs/STAR_COMPARISON.md). They are saved measurements from several NuSTAR builds, not a fresh benchmark of the current commit.
-
-> [!WARNING]
-> **Dataset provenance needs correction.** The saved report calls SRR21781765 RNA-seq, but [ENA metadata](https://www.ebi.ac.uk/ena/browser/view/SRR21781765) classifies it as paired-end WXS (whole-exome sequencing). The actual benchmark inputs and their checksums have not yet been reconciled with that accession. Treat the saved numbers as historical implementation measurements, not a verified RNA-seq benchmark. A [new Oscar benchmark plan](docs/OSCAR_BENCHMARK_PLAN.md) uses identified RNA-seq datasets.
-
-### Datasets and test setup
-
-| Dataset | What was tested |
+| Item | Status |
 | :--- | :--- |
-| **SRR21781765 subset** | Reported as a one-million-read single-end subset aligned to GRCh38, named `stratified-small.fastq`. The cited accession is classified as paired-end WXS; the subset provenance remains unresolved. |
-| **Synthetic Solo input** | The same reported subset with synthetic cell barcodes and UMIs. These runs test implementation behavior, not recovery of real cells. |
-| **BAM remapping input** | 1,215,901 alignment records from a previous output BAM. NuSTAR reads BAM directly; STAR receives converted SAM through `readFilesCommand`. |
-| **Full-human two-pass run** | 535.7 million reads. Junction tables and non-time mapping statistics were compared; full alignment records were not compared. |
-| **Real PBMC v3 data** | The existing report states that raw/filtered matrices and summaries match. The supporting full-data report is not in this checkout, so this README does not add a dataset identifier or timing result. |
+| Datasets, accessions, and subset selection | To be supplied |
+| Reference genome and annotation versions | To be supplied |
+| CPU, RAM, operating system, and storage | To be supplied |
+| STAR/NuSTAR versions, build settings, and commands | To be supplied |
+| Runtime and peak RSS, with repeated runs | To be measured |
+| Alignment records, junctions, statistics, and Solo output comparisons | To be compared |
 
-For the million-read tests, both programs ran on the same machine with **1 or 32 requested threads**, warmed indexes, and serial execution under a benchmark lock. Each measurement is a single run. Timed Solo runs used `--soloCellFilter None`; BAM output used compression level 1 and a 2 GiB sort budget.
-
-**Benchmark machine — details to be supplied before publication:**
-
-| Item | Configuration |
-| :--- | :--- |
-| CPU model, sockets, and physical/logical cores | **[To be supplied]** |
-| Installed RAM | **[To be supplied]** |
-| Operating system and kernel | **[To be supplied]** |
-| Storage used for inputs, indexes, and outputs | **[To be supplied]** |
-| Compiler version and build flags for each measured binary | **[To be supplied]** |
-
-### Runtime and memory
-
-The table shows the **32-thread** million-read runs against **STAR 2.7.11b**. Times include index loading, input, mapping, counting when enabled, and output. Initial index construction is excluded; two-pass index extension is included. Speedup is STAR time divided by NuSTAR time.
-
-| Workload | STAR | NuSTAR | Speedup |
-| :--- | ---: | ---: | ---: |
-| Two-pass, no alignment file | 89.76 s | 78.84 s | 1.14× |
-| Solo gene counting, no alignment file | 20.74 s | 7.79 s | 2.66× |
-| Solo + sorted BAM with corrected CB/UB tags | 24.30 s | 9.03 s | 2.69× |
-| Solo + unsorted BAM | 22.58 s | 7.40 s | 3.05× |
-| BAM input + Solo, no alignment file | 24.05 s | 9.02 s | 2.67× |
-
-The larger two-pass run tells a different story:
-
-| Full-human two-pass run | STAR | NuSTAR |
-| :--- | ---: | ---: |
-| Wall time | 1,598.68 s | 1,906.23 s |
-| Peak resident memory | 49.49 GiB | 40.73 GiB |
-
-NuSTAR was **19.2% slower** on that run and used less peak resident memory. The STAR baseline was reused rather than rerun alongside the NuSTAR repair. The published summary does not state its thread count. These measurements do not establish a speed advantage across workloads. The [full report](docs/STAR_COMPARISON.md#timed-workloads) includes the 1-thread results and comparison details.
-
-### Are the outputs identical?
-
-**Within the comparisons below, yes. That does not mean every output file is byte-for-byte identical or every STAR option is supported.**
-
-| Comparison | Recorded result | What “identical” covers |
-| :--- | :--- | :--- |
-| Coordinate-sorted BAM | All 1,215,901 decoded records match at 1 and 32 threads | Record order, coordinate ties, and tags. Compressed BAM bytes and program headers are excluded. |
-| Unsorted BAM | All 1,215,901 decoded records match as multisets at both thread counts | Records and their multiplicity; order is not required to match. |
-| Synthetic Solo counting | Compared files match exactly at 1 and 32 threads | Raw matrices, barcode/feature statistics, gene summaries, and junctions; mapping statistics exclude timing fields. |
-| Generated two-pass cases | 12 cases pass | SAM record multisets, junctions, non-time statistics, and inserted junction tables. |
-| Full-human two-pass run | Junctions and non-time statistics match in both passes | No full alignment-record comparison is reported. |
-
-One tested combination differs: with four threads, `--twopass1readsN 40`, and `--outSAMorder PairedKeepInputOrder`, the saved STAR run produced zero alignment records while NuSTAR produced 227. See the [known behavior difference](docs/STAR_COMPARISON.md#a-known-behavior-difference).
-
-Agreement with STAR measures compatibility in the tested cases. It is not an estimate of biological accuracy. The repository does not yet provide a systematic benchmark against known truth.
+See the [benchmark template](docs/BENCHMARKS.md) for the workloads and fields to fill in. Earlier runs remain in the [historical reports](docs/BENCHMARKS.md#historical-records); they describe older builds and are not results for this revision.
 
 ## Implementation status
 
-The two figures below compare STAR 2.7.11b with NuSTAR. The first shows the processing flow; the second expands four implementation changes found in the source. See the [source comparison](docs/IMPLEMENTATION_COMPARISON.md) for the compared revisions, code links, and scope.
+The two figures below compare STAR 2.7.11b with NuSTAR. The first shows the processing flow; the second expands implementation changes found in the current source. See the [source comparison](docs/IMPLEMENTATION_COMPARISON.md) for the compared revisions, code links, and scope.
+
+### Updates in the current implementation
+
+Documentation follows the implementation at [`bdf6bfa`](https://github.com/BioCode-Commons/NuSTAR/tree/bdf6bfa7d465c965edac091c6f13d292a81be1ef). The latest changes include:
+
+- **Overlapping paired-end reads:** `--peOverlapNbasesMin` enables mate-overlap merge/remapping. NuSTAR maps the merged sequence with a separate single-read workspace, projects the result back to the mates, and recalculates paired scores. The option defaults to `0` (disabled); `--peOverlapMMp` defaults to `0.01`.
+- **Junction strand handling:** annotation preparation now follows STAR's ordering and winner-selection rules when proposals share coordinates but differ in strand, motif, or priority. New regression fixtures cover these cases; the older human-data mismatch has not been rerun here.
+- **Two-pass index extension:** the suffix-array merge is split into independent output-rank chunks. Each chunk finds its starting insertion by binary search and writes a separate packed range; OpenMP schedules the chunks when available.
+- **Index-build memory lifetime:** temporary suffix positions are released while packing on Linux. Prefix tables are built after that temporary array is freed, and construction objects are released before index reload verification.
+- **Clipped-read statistics:** input-base counts use clipped read lengths, following STAR's statistics convention.
+
+These are implementation changes, not measured performance improvements. See the [detailed source comparison](docs/IMPLEMENTATION_COMPARISON.md#changes-in-the-updated-implementation).
 
 ### Processing flow
 
@@ -181,12 +134,12 @@ Both programs already use worker-owned chunks. NuSTAR exposes the stage results 
 - **Pipeline state:** STAR methods share `ReadAlign` fields; NuSTAR passes explicit results between stages. The recursive stitching kernel is retained.
 - **BAM sorting:** STAR sorts coordinate bins and concatenates them; NuSTAR sorts buffered runs and merges them with a priority queue.
 
-These describe implementation mechanisms. Their individual performance effects have not been isolated by the end-to-end benchmarks.
+The figures describe source-level mechanisms. Current runtime, memory use, and output agreement remain to be measured.
 
 | STAR feature or workflow | NuSTAR implementation | Status and limits |
 | :--- | :--- | :--- |
 | Reference indexing and annotation | `reference/`, `index/`, `annotation/` | Implemented with a native index format. STAR binary indexes and shared-memory load/remove modes are not supported. |
-| Seed search, windows, stitching, and selection | `seed_search/`, `window/`, `stitching/`, `selection/` | Implemented for single-end and paired-end spliced alignment. Most configurable STAR scoring and filtering options are not exposed. |
+| Seed search, windows, stitching, and selection | `seed_search/`, `window/`, `stitching/`, `selection/` | Implemented for single-end and paired-end spliced alignment, including optional overlap merge/remapping. Most configurable STAR scoring and filtering options are not exposed. |
 | Basic two-pass alignment | `runtime/two_pass.cpp` and junction insertion in `index/` | Implemented: discover junctions, extend the index, and remap the reads. |
 | STARsolo | `solo/` | STAR-derived code, refactored and adapted to NuSTAR. Supports barcode correction, UMI deduplication, gene/SJ/velocity counting, cell filtering, and SmartSeq. `Transcript3p` has less validation. |
 | SAM/BAM output, junctions, and statistics | `sam/`, `bam/`, `output/`, `splice_junction/`, `statistics/` | Implemented, including sorted BAM and corrected Solo tags. See the [output limits](docs/USAGE.md#compatibility). |
@@ -198,13 +151,13 @@ The [usage guide](docs/USAGE.md#compatibility) lists the remaining input, output
 
 ## Roadmap
 
-The proposed next steps below follow the gaps in the current implementation and validation report. They have no release dates yet; feature requests and contributions can help set priorities.
+The proposed next steps below follow the gaps in implementation and current validation. They have no release dates yet; feature requests and contributions can help set priorities.
 
 | Area | Next step | How to check the result |
 | :--- | :--- | :--- |
-| Reproducible benchmarks | Publish machine details and missing run artifacts; repeat measurements using the same current binaries | Record commands, binary hashes, hardware, cache conditions, repeated timings, and output comparisons |
+| Reproducible benchmarks | Fill in the benchmark template using paired runs of the current binaries | Record commands, binary hashes, hardware, cache conditions, repeated timings, and output comparisons |
 | Bulk RNA-seq validation | Add large single-end and paired-end record comparisons and thread-scaling runs | Compare full alignment records, junctions, and non-time statistics with STAR |
-| Two-pass performance | Investigate the full-human runtime gap and measure individual stages | Repeat the full workload while preserving the existing output comparisons |
+| Two-pass performance | Measure the updated insertion and merge stages | Repeat identical inputs with both engines; compare both passes and final outputs |
 | Single-cell coverage | Test more real datasets and chemistries, corrected BAM tags, and less-tested mode combinations | Compare raw/filtered matrices, summaries, and corrected tags; add truth-based evaluations where data allow |
 | STAR feature coverage | Scope compressed FASTQ, additional output modes, and advanced alignment workflows | Define supported options and comparison fixtures before implementing each feature |
 
@@ -212,9 +165,9 @@ The unimplemented features above are candidates for future work, not a promise t
 
 ## AI use and human review
 
-We used AI-assisted development to refactor and implement NuSTAR. We have conducted comprehensive human code reviews and tested the supported workflows against STAR.
+NuSTAR's maintainers report AI-assisted development and comprehensive human code review in the project documentation. This documentation refresh does not independently verify a comprehensive audit of every change in the updated revision.
 
-The human-review statement describes the maintainers' review of the code. This repository does not include a separate audit report listing reviewers, reviewed revisions, and audit scope. The tests and [comparison report](docs/STAR_COMPARISON.md) document output checks and known limits; they do not establish that every STAR behavior has been reproduced.
+No separate audit report listing reviewers, reviewed revisions, and scope is included here. The source tests and [historical comparison report](docs/STAR_COMPARISON.md) describe output checks and limitations; neither establishes that every STAR behavior has been reproduced. Current benchmark and output-comparison results remain pending.
 
 ## Questions and contributions
 

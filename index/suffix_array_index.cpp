@@ -130,9 +130,9 @@ std::string optionsHash(const BuildParameters& parameters, std::string_view algo
     return hash.finish();
 }
 
-template<class Position>
+template<class Suffixes>
 std::vector<PrefixRange> buildPrefixes(std::span<const std::uint8_t> sequence,
-    std::span<const Position> suffixes, std::uint32_t bases, int runThreadN) {
+    const Suffixes& suffixes, std::uint32_t bases, int runThreadN) {
     const auto domain = std::uint64_t{1} << (2*bases);
     auto scan = [&](std::uint64_t first, std::uint64_t last, std::uint64_t reserve) {
         std::vector<PrefixRange> result;
@@ -284,8 +284,10 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
             else
                 normalizeStarSuffixRanks(all, sequence, concrete->storage().forward.size(),
                     concrete->synthetic().size(), star_suffix_length_max);
-            prefixes = buildPrefixes(sequence, std::span<const Position>(all), options.prefix_bases, options.runThreadN);
-            packed = PackedSuffixArray(all, sequence.size());
+            if constexpr (sizeof(Position) == 8)
+                packed = PackedSuffixArray::packAndRelease(std::move(all), sequence.size());
+            else
+                packed = PackedSuffixArray(all, sequence.size());
         };
         if (dynamic_cast<const SaisSuffixArrayBuilder*>(builder_.get()))
             finish(detail::buildSuffixArraySais64(sequence, options.runThreadN));
@@ -295,6 +297,7 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
                 throw std::length_error("configured custom builder only supports 32-bit positions");
             finish(builder_->build(sequence));
         }
+        prefixes = buildPrefixes(sequence, packed, options.prefix_bases, options.runThreadN);
     } catch (const std::exception& error) {
         return indexError(ErrorKind::Capacity, error.what());
     }
@@ -305,9 +308,11 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
     if (!request.artifact.parent_path().empty())
         std::filesystem::create_directories(request.artifact.parent_path(), ec);
     if (ec) return indexError(ErrorKind::Io, "cannot create index directory: " + ec.message());
+    const auto physical_length=sequence.size();
+    std::vector<std::uint8_t>().swap(sequence);
     auto index = std::make_shared<SuffixArrayIndex>(identity, reference, request.artifact,
         std::string(builderId()), options.prefix_bases, star_suffix_length_max,
-        sequence.size(), std::move(packed), std::move(prefixes));
+        physical_length, std::move(packed), std::move(prefixes));
     try { writeIndex(request.artifact, *index); }
     catch (const std::exception& error) { return indexError(ErrorKind::Io, error.what()); }
     auto file = identifyFile(request.artifact);

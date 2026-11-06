@@ -131,6 +131,12 @@ PackedSuffixArray PackedSuffixArray::lazyZeroed(std::size_t count,std::uint8_t w
     result.data_=result.lazy_bytes_.get();
     return result;
 }
+PackedSuffixArray::RangeWriter PackedSuffixArray::rangeWriter(std::size_t first_rank) {
+    if (mapped_owner_ || first_rank%64 != 0 || first_rank > count_)
+        throw std::invalid_argument("packed range writer needs owned storage and a 64-aligned rank");
+    return RangeWriter(const_cast<std::uint8_t*>(data_)+first_rank*width_/8, width_);
+}
+
 void PackedSuffixArray::discardReadPages(std::size_t first,std::size_t past) const {
 #if defined(__unix__)
     if(!file_mapping_) return;
@@ -142,6 +148,26 @@ void PackedSuffixArray::discardReadPages(std::size_t first,std::size_t past) con
 #else
     (void)first;(void)past;
 #endif
+}
+
+PackedSuffixArray PackedSuffixArray::packAndRelease(std::vector<std::uint64_t> values,
+    std::uint64_t physical_length) {
+    auto result=lazyZeroed(values.size(),widthFor(physical_length));
+#if defined(__linux__)
+    const auto page=static_cast<std::uintptr_t>(::sysconf(_SC_PAGESIZE));
+    auto released=(reinterpret_cast<std::uintptr_t>(values.data())+page-1)/page*page;
+#endif
+    for (std::size_t i=0;i<values.size();++i) {
+        result.put(i,values[i]);
+#if defined(__linux__)
+        if ((i&((1U<<20)-1))==((1U<<20)-1)) {
+            const auto end=reinterpret_cast<std::uintptr_t>(values.data()+i+1)/page*page;
+            if (end>released) ::madvise(reinterpret_cast<void*>(released),end-released,MADV_DONTNEED);
+            released=end;
+        }
+#endif
+    }
+    return result;
 }
 
 PackedSuffixArray PackedSuffixArray::fromBytes(std::uint8_t width,

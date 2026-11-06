@@ -26,6 +26,7 @@ def run_one(label: str, command: list[str], directory: Path) -> dict:
         raise RuntimeError(f"{label} failed ({process.returncode}):\n{tail}")
     return {
         "label": label,
+        "command": command,
         "wall_seconds": elapsed,
         "user_seconds": usage.ru_utime,
         "system_seconds": usage.ru_stime,
@@ -42,12 +43,15 @@ def main() -> int:
     parser.add_argument("--overhang", type=int, default=100)
     parser.add_argument("--chr-bin-bits", type=int, default=18)
     parser.add_argument("--prefix-bases", type=int, default=10)
-    parser.add_argument("--star-threads", type=int, default=1)
+    parser.add_argument("--runThreadN", "--star-threads", dest="threads", type=int, default=1,
+                        help="threads for both programs (--star-threads is a legacy alias)")
+    parser.add_argument("--limitGenomeGenerateRAM", type=int, default=40000000000,
+                        help="STAR construction RAM setting in bytes")
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
-    if args.repeat < 1 or args.star_threads < 1:
-        parser.error("repeat and star-threads must be positive")
+    if args.repeat < 1 or args.threads < 1 or args.limitGenomeGenerateRAM < 1:
+        parser.error("repeat, runThreadN and limitGenomeGenerateRAM must be positive")
     star, nustar, fasta = (p.resolve(strict=True) for p in
                            (args.star, args.nustar, args.fasta))
     gtf = args.gtf.resolve(strict=True) if args.gtf else None
@@ -66,20 +70,21 @@ def main() -> int:
                                "--genomeFastaFiles", str(fasta), "--genomeDir", str(directory)]
                     command += ["--genomeChrBinNbits", str(args.chr_bin_bits),
                                 "--genomeSAindexNbases", str(args.prefix_bases),
-                                "--runThreadN", str(args.star_threads),
-                                "--limitGenomeGenerateRAM", "4000000000"]
+                                "--runThreadN", str(args.threads),
+                                "--limitGenomeGenerateRAM", str(args.limitGenomeGenerateRAM)]
                 else:
-                    command = [str(nustar), "genomeGenerate", "--genomeFastaFiles",
+                    command = [str(nustar), "--runMode", "genomeGenerate", "--genomeFastaFiles",
                                str(fasta), "--genomeDir", str(directory),
                                "--genomeChrBinNbits", str(args.chr_bin_bits),
-                               "--genomeSAindexNbases", str(args.prefix_bases)]
+                               "--genomeSAindexNbases", str(args.prefix_bases),
+                               "--runThreadN", str(args.threads)]
                     if gtf:
                         command += ["--sjdbOverhang", str(args.overhang)]
                 if gtf:
                     command += ["--sjdbGTFfile", str(gtf)]
                 result = run_one(label, command, directory)
                 result["iteration"] = iteration + 1
-                result["threads"] = args.star_threads if label == "STAR" else 1
+                result["threads"] = args.threads
                 records.append(result)
                 print(f"{label} {iteration+1}: {result['wall_seconds']:.2f}s, "
                       f"{result['max_rss_kib']/1024:.0f} MiB peak RSS", flush=True)
@@ -94,7 +99,8 @@ def main() -> int:
             "inputs": {"fasta": str(fasta), "gtf": str(gtf) if gtf else None,
                        "overhang": args.overhang, "chr_bin_bits": args.chr_bin_bits,
                        "prefix_bases": args.prefix_bases,
-                       "star_threads": args.star_threads},
+                       "runThreadN": args.threads,
+                       "limitGenomeGenerateRAM": args.limitGenomeGenerateRAM},
             "records": records,
         }, indent=2) + "\n")
     return 0

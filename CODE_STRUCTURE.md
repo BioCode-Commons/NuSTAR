@@ -35,6 +35,12 @@ The Solo steps run only when requested. A run without alignment output still com
 
 The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeline/single_end/mapping_composition.cpp) and [pipeline/paired_end/mapping_composition.cpp](pipeline/paired_end/mapping_composition.cpp). Their neighboring `pipeline.cpp` files add selection, record projection, junctions, and statistics. This is the place to review how one stage's output becomes the next stage's input.
 
+## Overlapping mates
+
+[pipeline/paired_end/star_overlap.cpp](pipeline/paired_end/star_overlap.cpp) implements `peOverlapNbasesMin` and `peOverlapMMp`. The paired pipeline calls it after ordinary paired candidate mapping and before selection. It searches the two mate offsets using STAR's match/mismatch rule, maps a merged read with a separate single-read workspace, projects blocks back into paired coordinates, and recalculates the paired scores. The original sequences remain available for SAM/BAM output.
+
+[runtime/paired_alignment.cpp](runtime/paired_alignment.cpp) creates this helper only when overlap is enabled. It shares the seed finder, window builder and reference with the normal mapper. The helper does not invoke a complete single-end output pipeline or consume random selection state.
+
 ## Index and annotation
 
 For the old/new flow and specific sorting, reset, state-ownership, and BAM differences, see [the source comparison](docs/IMPLEMENTATION_COMPARISON.md).
@@ -43,6 +49,8 @@ For the old/new flow and specific sorting, reset, state-ownership, and BAM diffe
 
 The default production suffix-array build calls bundled libsais through [index/wide_suffix_array.cpp](index/wide_suffix_array.cpp), selected by [index/suffix_array_index.cpp](index/suffix_array_index.cpp). The separate [index/sais.cpp](index/sais.cpp) implementation serves the 32-bit builder interface. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
 
+During construction, `PackedSuffixArray::packAndRelease` consumes the temporary 64-bit positions; on Linux it releases complete source pages as they are packed. Prefix ranges are built after that temporary SA is freed, and the CLI releases construction objects before reloading the saved index. This reduces simultaneous allocations without changing suffix ranks or the file format.
+
 [index/suffix_array_index.cpp](index/suffix_array_index.cpp) loads and saves the native index. [index/backend.hpp](index/backend.hpp) is the interface used by mapping code. The index representation stays behind that interface so seed search does not need to know how files were opened.
 
 The reference and index are shared between workers. Their owners keep the backing storage alive; per-read stages use views into it. Per-read scratch buffers belong to workers and are reused rather than recreated for each read.
@@ -50,6 +58,8 @@ The reference and index are shared between workers. Their owners keep the backin
 ## Two-pass mapping
 
 [runtime/two_pass.cpp](runtime/two_pass.cpp) runs pass one with junction collection, filters the junctions, extends the index, and starts pass two from the original input. [index/junction_insert.cpp](index/junction_insert.cpp) and [index/extension.cpp](index/extension.cpp) do the index update. Pass two uses the same mapping pipeline as an ordinary run.
+
+The extended suffix-array merge partitions output ranks into independent packed ranges. Each worker binary-searches the first insertion for its range, merges the old and new entries, and releases consumed old-array pages. This keeps packed writes disjoint.
 
 This split matters when changing the code: junction discovery belongs to the mapping run, while index insertion belongs to `index/`. The two-pass coordinator should not implement another seed search or stitcher.
 

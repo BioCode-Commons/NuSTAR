@@ -1,10 +1,10 @@
-# NuSTAR and STAR: runtime and correctness
+# NuSTAR and STAR: historical runtime and correctness
 
 [Back to the README](../readme.md#benchmarks) · [Run the tests](../CONTRIBUTING.md#tests)
 
-> These are previously recorded results, not a fresh run of the current commit. CPU, RAM, operating-system, storage, and compiler/build details still need to be supplied; see the [benchmark machine table](../readme.md#datasets-and-test-setup). The supporting `VALIDATION.md`, `DATA_FEATURE_VALIDATION.md`, and `JUNCTION_PADDING_FIX.md` reports and the generated `build/` artifacts are not included in this checkout. Missing evidence paths are retained below as text, not download links.
+> These are previously recorded results, not a fresh run of the current commit. CPU, RAM, operating-system, storage, and compiler/build details still need to be supplied; see the [current benchmark template](BENCHMARKS.md). The supporting `VALIDATION.md`, `DATA_FEATURE_VALIDATION.md`, and `JUNCTION_PADDING_FIX.md` reports and the generated `build/` artifacts are not included in this checkout. Missing evidence paths are retained below as text, not download links.
 
-**Latest full-human result:** after the junction-padding fix (`JUNCTION_PADDING_FIX.md`), NuSTAR completes both passes on all 535.7 million reads. Both passes' junction tables and non-time mapping statistics match STAR. Whole-process time is 1906.23 seconds for NuSTAR versus the saved STAR baseline of 1598.68 seconds: NuSTAR is 19.2% slower. Peak RSS is 40.73 versus 49.49 GiB. The earlier full-data report (`DATA_FEATURE_VALIDATION.md`) retains the failure that led to this fix and the real PBMC Solo baseline. These are single runs, and STAR's full-human result was reused rather than rerun alongside the repair.
+**Historical full-human result:** after the junction-padding fix (`JUNCTION_PADDING_FIX.md`), NuSTAR completes both passes on all 535.7 million reads. Both passes' junction tables and non-time mapping statistics match STAR. Whole-process time is 1906.23 seconds for NuSTAR versus the saved STAR baseline of 1598.68 seconds: NuSTAR is 19.2% slower. Peak RSS is 40.73 versus 49.49 GiB. The earlier full-data report (`DATA_FEATURE_VALIDATION.md`) retains the failure that led to this fix and the real PBMC Solo baseline. These are single runs, and STAR's full-human result was reused rather than rerun alongside the repair.
 
 The earlier saved human-reference runs show NuSTAR finishing the smaller tested two-pass, Solo, and BAM workloads sooner than STAR 2.7.11b. The compared outputs match in the cases listed below. This does not establish that NuSTAR is faster for every feature, or that every STAR option behaves identically.
 
