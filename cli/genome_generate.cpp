@@ -132,13 +132,16 @@ int runGenomeGenerate(int argc, char** argv, int first_option) {
         mark("SAIS/prefix/write");
 
         // Verify both persisted artifacts before reporting a successful build.
+        const auto saved_index_hash=index->identity().artifact_sha256;
+        index.reset();
+        ready.lease.reset();
         auto loaded_reference = take(references.loadBase(
             ReferenceRequest{build.output_directory, "nustar-reference-v1", {}}));
         auto loaded_index = take(backend.load(search, loaded_reference.lease));
         mark("reload/verify");
         const auto concrete = std::dynamic_pointer_cast<const GenomeReferenceData>(loaded_reference.lease);
         const auto suffix_index = std::dynamic_pointer_cast<const SuffixArrayIndex>(loaded_index);
-        if (!concrete || !suffix_index || index->identity().artifact_sha256 !=
+        if (!concrete || !suffix_index || saved_index_hash !=
                 loaded_index->identity().artifact_sha256)
             throw std::runtime_error("index reload verification failed");
         const auto manifest_path = build.output_directory / "nustarGenomeParameters.txt";

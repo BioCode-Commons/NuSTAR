@@ -1,6 +1,9 @@
 # Included from the project root; paths and binary names remain root-relative.
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_executable(junction_strand_test tests/annotation/junction_strand.cpp)
+    target_link_libraries(junction_strand_test PRIVATE nustar_annotation)
+    add_test(NAME junction_strand_test COMMAND junction_strand_test)
     add_test(NAME star_cli COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/star_cli.py $<TARGET_FILE:nustar>)
     add_executable(single_projection_test tests/sam/single_projection.cpp)
@@ -254,6 +257,16 @@ if(BUILD_TESTING)
     set(NUSTAR_FEATURE_STAR_BASELINE "" CACHE FILEPATH
         "STAR 2.7.11b executable for native 2-pass and Solo differential suites")
     if(NUSTAR_FEATURE_STAR_BASELINE)
+        add_test(NAME junction_strand_star_diff COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/junction_strand.py
+            $<TARGET_FILE:nustar> ${NUSTAR_FEATURE_STAR_BASELINE}
+            ${CMAKE_CURRENT_BINARY_DIR}/junction-strand-diff)
+        set_tests_properties(junction_strand_star_diff PROPERTIES LABELS integration)
+        add_test(NAME paired_overlap_star_diff COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/paired_overlap.py
+            $<TARGET_FILE:nustar> ${NUSTAR_FEATURE_STAR_BASELINE}
+            ${CMAKE_CURRENT_BINARY_DIR}/paired-overlap-diff)
+        set_tests_properties(paired_overlap_star_diff PROPERTIES LABELS integration)
         add_test(NAME junction_padding_star_diff COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/junction_padding.py
             $<TARGET_FILE:nustar> ${NUSTAR_FEATURE_STAR_BASELINE}

@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
                      "BAM output: --outBAMcompression -1..9; --limitBAMsortRAM bytes; --outSAMattributes tags.\n"
                      "Output: --outSAMtype SAM|None or BAM Unsorted|SortedByCoordinate (both allowed); --outSAMunmapped None|Within (default None); --outSAMorder Paired|PairedKeepInputOrder.\n"
                      "Two-pass: --twopassMode Basic [--twopass1readsN N] [--sjdbInsertSave Basic|All].\n"
+                     "Overlapping mates: --peOverlapNbasesMin N (default 0, disabled); --peOverlapMMp fraction (default 0.01).\n"
                      "Solo: --soloType CB_UMI_Simple|CB_UMI_Complex|SmartSeq; supports the --solo* parameters listed in readme.md.\n"
                      "Place the barcode FASTQ last in --readFilesIn, or use --soloBarcodeMate with fixed clipping.\n"
                      "SmartSeq: --readFilesManifest FILE --soloType SmartSeq --soloUMIdedup Exact.\n"

@@ -5,6 +5,7 @@
 #include "../reads/input_config.hpp"
 #include "../reference/genome.hpp"
 #include "../solo/config.hpp"
+#include "../pipeline/paired_end/overlap_config.hpp"
 #include <limits>
 
 namespace nustar::star2711b {
@@ -15,6 +16,7 @@ struct AlignmentResources {
 };
 
 struct RunControl {
+    OverlapConfig overlap{0,0.01};
     AlignmentResources resources;
     std::vector<InputGroup> input_groups;
     std::array<std::array<std::uint64_t, 2>, 2> clipping{};

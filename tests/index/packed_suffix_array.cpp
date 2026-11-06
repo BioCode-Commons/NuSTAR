@@ -81,6 +81,16 @@ int main() {
             } catch (const std::invalid_argument&) {}
         }
         const std::uint64_t human_physical = 6'200'000'000ULL;
+        {
+            // Cross the source-page release boundary, with values above 32 bits.
+            std::vector<std::uint64_t> source((1U<<20)+257);
+            for (std::size_t i=0;i<source.size();++i) source[i]=(i*104729ULL)%human_physical;
+            const auto count=source.size();
+            auto consumed=PackedSuffixArray::packAndRelease(std::move(source),human_physical);
+            for (std::size_t i=0;i<count;++i)
+                if (consumed[i]!=(i*104729ULL)%human_physical)
+                    throw std::runtime_error("consuming pack lost values at a released source page");
+        }
         const std::vector<std::uint64_t> human_values{
             0, 4'294'967'296ULL, human_physical-1, 4'900'000'001ULL};
         const PackedSuffixArray human(human_values, human_physical);

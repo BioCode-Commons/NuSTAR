@@ -28,14 +28,22 @@ struct PreparedProposal {
     std::uint8_t left, right, priority;
 };
 
-bool preferred(const PreparedProposal& candidate, const PreparedProposal& current) {
+bool preferredNormalized(const PreparedProposal& candidate, const PreparedProposal& current) {
     if (candidate.priority != current.priority) return candidate.priority > current.priority;
-    if ((candidate.strand != Strand::Unknown) != (current.strand != Strand::Unknown))
-        return candidate.strand != Strand::Unknown;
     if ((candidate.motif != Motif::Noncanonical) != (current.motif != Motif::Noncanonical))
         return candidate.motif != Motif::Noncanonical;
-    if (candidate.left != current.left) return candidate.left < current.left;
-    return candidate.source < current.source;
+    return candidate.left < current.left;
+}
+
+unsigned strandOrder(Strand strand) {
+    // sjdbPrepare sorts coordinate + {0, nGenomeReal, 2*nGenomeReal}.
+    return strand == Strand::Plus ? 0 : strand == Strand::Minus ? 1 : 2;
+}
+
+Strand resolvedStrand(const PreparedProposal& proposal) {
+    if (proposal.strand != Strand::Unknown || proposal.motif == Motif::Noncanonical)
+        return proposal.strand;
+    return static_cast<unsigned>(proposal.motif) % 2 ? Strand::Plus : Strand::Minus;
 }
 
 } // namespace
@@ -82,16 +90,16 @@ Result<PreparedJunctionDatabase> GenomeJunctionPreparer::prepare(
             reported, motif, proposal.strand, left, right, proposal.legacy_priority});
     }
     std::stable_sort(work.begin(), work.end(), [](const auto& a, const auto& b) {
-        return std::tie(a.normalized.begin.value, a.normalized.end.value, a.strand) <
-               std::tie(b.normalized.begin.value, b.normalized.end.value, b.strand);
+        return std::tuple(strandOrder(a.strand), a.normalized.begin.value, a.normalized.end.value) <
+               std::tuple(strandOrder(b.strand), b.normalized.begin.value, b.normalized.end.value);
     });
     std::vector<PreparedProposal> first_pass;
     for (const auto& item : work) {
         if (!first_pass.empty() &&
             first_pass.back().normalized.begin.value == item.normalized.begin.value &&
-            first_pass.back().normalized.end.value == item.normalized.end.value &&
-            first_pass.back().strand == item.strand) {
-            if (preferred(item, first_pass.back())) first_pass.back() = item;
+            first_pass.back().normalized.end.value == item.normalized.end.value) {
+            // STAR compares coordinates here, including adjacent strand groups.
+            if (preferredNormalized(item, first_pass.back())) first_pass.back() = item;
         } else first_pass.push_back(item);
     }
     std::stable_sort(first_pass.begin(), first_pass.end(), [](const auto& a, const auto& b) {
@@ -99,23 +107,43 @@ Result<PreparedJunctionDatabase> GenomeJunctionPreparer::prepare(
                std::tie(b.second_pass.begin.value, b.second_pass.end.value);
     });
     std::vector<PreparedProposal> final;
-    for (const auto& item : first_pass) {
+    for (std::size_t i = 0; i < first_pass.size(); ++i) {
+        const auto& item = first_pass[i];
         if (!final.empty() &&
             final.back().second_pass.begin.value == item.second_pass.begin.value &&
             final.back().second_pass.end.value == item.second_pass.end.value) {
-            if (preferred(item, final.back())) final.back() = item;
-        } else final.push_back(item);
+            auto& current = final.back();
+            // Match sjdbPrepare's second pass. Priority is compared with the
+            // previous sorted proposal, even if that proposal was skipped.
+            const auto previous_priority = first_pass[i-1].priority;
+            if (item.priority < previous_priority) continue;
+            if (item.priority == previous_priority) {
+                if (current.strand != Strand::Unknown && item.strand == Strand::Unknown)
+                    continue;
+                if (current.strand == Strand::Unknown && item.strand != Strand::Unknown) {
+                    // Replace the undefined strand with the supplied strand.
+                } else if (current.motif == Motif::Noncanonical && item.motif == Motif::Noncanonical) {
+                    current.strand = Strand::Unknown;
+                    continue;
+                } else if ((current.motif != Motif::Noncanonical && item.motif == Motif::Noncanonical) ||
+                    static_cast<unsigned>(current.motif) % 2 == 2-static_cast<unsigned>(current.strand)) {
+                    continue;
+                }
+            }
+            current = item;
+            current.strand = resolvedStrand(item);
+        } else {
+            final.push_back(item);
+            final.back().strand = resolvedStrand(item);
+        }
     }
     for (const auto& item : final) {
         const auto donor = item.reported.begin.value;
         const auto acceptor = item.reported.end.value;
         // STAR copies flanks from the padded genome, including chromosome padding.
-        Strand strand = item.strand;
-        if (strand == Strand::Unknown && item.motif != Motif::Noncanonical)
-            strand = static_cast<int>(item.motif) % 2 ? Strand::Plus : Strand::Minus;
         const auto id = result.entries.size();
         result.entries.push_back(SjdbEntry{JunctionId{id}, item.second_pass,
-            item.reported, strand, item.motif, item.left, item.right,
+            item.reported, item.strand, item.motif, item.left, item.right,
             GenomeOffset{donor - config.sjdbOverhang}, GenomeOffset{acceptor}});
         result.winning_proposal_indices.push_back(item.source);
     }

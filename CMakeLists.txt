@@ -96,7 +96,8 @@ target_link_libraries(nustar_paired_mapping PUBLIC nustar_seed nustar_window nus
 add_library(nustar_single_pipeline STATIC pipeline/single_end/pipeline.cpp)
 target_link_libraries(nustar_single_pipeline PUBLIC nustar_single_mapping
     nustar_selection nustar_sam nustar_sj nustar_stats)
-add_library(nustar_paired_pipeline STATIC pipeline/paired_end/pipeline.cpp)
+add_library(nustar_paired_pipeline STATIC pipeline/paired_end/pipeline.cpp
+    pipeline/paired_end/star_overlap.cpp)
 target_link_libraries(nustar_paired_pipeline PUBLIC nustar_paired_mapping nustar_single_mapping
     nustar_selection nustar_sam nustar_sj nustar_stats)
 

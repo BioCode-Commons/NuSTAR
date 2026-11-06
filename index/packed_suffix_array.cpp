@@ -150,6 +150,26 @@ void PackedSuffixArray::discardReadPages(std::size_t first,std::size_t past) con
 #endif
 }
 
+PackedSuffixArray PackedSuffixArray::packAndRelease(std::vector<std::uint64_t> values,
+    std::uint64_t physical_length) {
+    auto result=lazyZeroed(values.size(),widthFor(physical_length));
+#if defined(__linux__)
+    const auto page=static_cast<std::uintptr_t>(::sysconf(_SC_PAGESIZE));
+    auto released=(reinterpret_cast<std::uintptr_t>(values.data())+page-1)/page*page;
+#endif
+    for (std::size_t i=0;i<values.size();++i) {
+        result.put(i,values[i]);
+#if defined(__linux__)
+        if ((i&((1U<<20)-1))==((1U<<20)-1)) {
+            const auto end=reinterpret_cast<std::uintptr_t>(values.data()+i+1)/page*page;
+            if (end>released) ::madvise(reinterpret_cast<void*>(released),end-released,MADV_DONTNEED);
+            released=end;
+        }
+#endif
+    }
+    return result;
+}
+
 PackedSuffixArray PackedSuffixArray::fromBytes(std::uint8_t width,
     std::size_t count, std::vector<std::uint8_t> bytes) {
     const auto payload = requiredBytes(count, width);

@@ -28,4 +28,6 @@ public:
         StageWorkspace&, CandidateSet& inout, OverlapState& out) const = 0;
 };
 
+Result<std::shared_ptr<const IPairedOverlapRefiner>> makeStarPairedOverlapRefiner(ReferenceLease);
+
 } // namespace nustar::star2711b

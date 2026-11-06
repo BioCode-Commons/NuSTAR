@@ -69,6 +69,10 @@ public:
     // calloc keeps untouched large pages uncommitted. Used by the streaming
     // junction merge, where an eagerly cleared second SA doubles peak RSS.
     static PackedSuffixArray lazyZeroed(std::size_t count,std::uint8_t width);
+    // Consume construction-only positions. On Linux, return fully consumed
+    // source pages while filling the packed array, instead of retaining both.
+    static PackedSuffixArray packAndRelease(std::vector<std::uint64_t> values,
+                                             std::uint64_t physical_length);
     // Advisory only: immutable file contents remain readable after discard.
     void discardReadPages(std::size_t first_rank,std::size_t past_rank) const;
 

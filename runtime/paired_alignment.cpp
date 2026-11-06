@@ -12,6 +12,7 @@
 #include "../splice_junction/star_junction.hpp"
 #include "../statistics/interface.hpp"
 #include "../stitching/paired_stitch.hpp"
+#include "../stitching/single_stitch.hpp"
 #include "../window/star_window.hpp"
 #include "bam_output.hpp"
 #include "defaults.hpp"
@@ -91,6 +92,14 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
                                                             limits};
         auto mapper = checked(
             composePairedCandidateMapper(reference, finder, builder, stitcher, candidate_config));
+        std::shared_ptr<const ISingleCandidateMapper> merged_mapper;
+        std::shared_ptr<const IPairedOverlapRefiner> overlap;
+        if (options.run.overlap.peOverlapNbasesMin) {
+            merged_mapper=checked(composeSingleCandidateMapper(reference,finder,builder,
+                checked(makeStarSingleStitcher(reference)),
+                SingleCandidateMappingConfig{window_config,defaultStarSingleStitchConfig(),score,limits}));
+            overlap=checked(makeStarPairedOverlapRefiner(reference));
+        }
         auto selector = makeStarAlignmentSelector();
         const auto selection = defaultStarSelectionConfig();
         const auto filter = defaultStarReadFilterConfig();
@@ -108,15 +117,17 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
         auto projector = makeStarPairedSamProjector();
         const auto sj_config = defaultStarSjOutputConfig();
         const PairedPipelineConfig pipeline_config{selection,  filter,        sj_config,
-                                                   paired_sam, stitch_config, OverlapConfig{0, 0},
+                                                   paired_sam, stitch_config, options.run.overlap,
                                                    score,      limits};
         auto pipeline = checked(composePairedPipeline(
-            reference, PairedKernelBundle{mapper, {}, {}, selector, projector}, pipeline_config));
+            reference, PairedKernelBundle{mapper, merged_mapper, overlap, selector, projector}, pipeline_config));
         // Like STAR's genomeMain.freeMemory(), drop mapping-only leases before
         // Solo reduction and BAM sorting. Metadata remains available to writers.
         auto release_mapping = [&] {
             pipeline.reset();
             mapper.reset();
+            merged_mapper.reset();
+            overlap.reset();
             finder.reset();
             builder.reset();
             stitcher.reset();

@@ -1,6 +1,7 @@
 #include "junction_insert.hpp"
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <limits>
 #include <tuple>
 
@@ -24,10 +25,13 @@ U insertionRank(const std::vector<std::uint8_t>& sj, U offset,
     const auto genome=reference.starGenome();
     auto compare=[&](U rank, U matched) {
         const auto location=locate(sa[rank],real,syn);
+        // Like STAR's g[-ii], comparison may reach the reference-owned guard
+        // just before/after the genome span. The first padding byte stops it.
+        const auto* suffix=genome.data()+location.position;
         for (;matched<10000;++matched) {
             const auto q=sj[offset+matched];
-            auto g=static_cast<std::uint8_t>(genome[location.reverse ?
-                location.position-matched : location.position+matched]);
+            const auto distance=static_cast<std::ptrdiff_t>(matched);
+            auto g=static_cast<std::uint8_t>(suffix[location.reverse ? -distance : distance]);
             if (location.reverse && g<4) g=3-g;
             if (q!=g) return std::pair{matched,q>g ? 1 : -1};
             if (q==5) return std::pair{matched,location.reverse ? -1 : 1};

@@ -66,6 +66,12 @@ The default run mode is `alignReads`. FASTQ files must be uncompressed. `--outFi
 
 Common outputs are `Aligned.out.sam`, `Aligned.out.bam`, or `Aligned.sortedByCoord.out.bam`, plus `SJ.out.tab` and `Log.final.out`. Use `--outSAMtype None` to skip alignment records while keeping junctions, statistics, and any requested Solo counts. Request both BAM orders with `--outSAMtype BAM Unsorted SortedByCoordinate`.
 
+### Overlapping paired reads
+
+Use `--peOverlapNbasesMin 20` to enable STAR-style mate merging and remapping. The default is `0` (disabled). `--peOverlapMMp` defaults to `0.01`; STAR compares the number of mismatches with the number of matches in the overlap, and treats N as a mismatch.
+
+NuSTAR first maps the pair normally, searches for overlap in both directions, maps the merged sequence through the single-read candidate mapper, then projects its alignments back to the two original mates and scores them again. Output still contains the original reads. This supports ordinary paired alignment; chimeric/fusion detection remains unimplemented.
+
 ### Two-pass alignment
 
 Add these options to an alignment command:
@@ -74,7 +80,7 @@ Add these options to an alignment command:
 --twopassMode Basic --twopass1readsN -1 --sjdbInsertSave Basic
 ```
 
-The first pass finds junctions. NuSTAR inserts the accepted junction sequences into the index, then rereads the input for the second pass. Flanks may extend into chromosome padding, as in STAR; see the [boundary fix and tests](docs/JUNCTION_PADDING_FIX.md). `-1` uses all reads in pass one; a positive value limits that pass. `--sjdbInsertSave All` also saves the updated native index. Input must be available for both passes.
+The first pass finds junctions. NuSTAR inserts the accepted junction sequences into the index, then rereads the input for the second pass. Flanks may extend into chromosome padding, as in STAR; see the [boundary fix and tests](docs/STAR_COMPARISON.md#full-data-junction-padding-validation). `-1` uses all reads in pass one; a positive value limits that pass. `--sjdbInsertSave All` also saves the updated native index. Input must be available for both passes.
 
 ### SAM and BAM input
 
@@ -173,6 +179,8 @@ Names and argument forms follow STAR where an equivalent exists. The old `--thre
 | `--outSAMorder MODE` | `Paired` | `Paired` or `PairedKeepInputOrder`. NuSTAR commits unsorted batches in input order in either mode. |
 | `--outBAMcompression N` | `1` | BGZF compression level, -1 through 9. |
 | `--limitBAMsortRAM BYTES` | `268435456` | Sort-record budget, not a total-process memory limit. Zero also selects 256 MiB in NuSTAR. |
+| `--peOverlapNbasesMin N` | `0` | Minimum overlap for mate merging and remapping; zero disables it. |
+| `--peOverlapMMp FRACTION` | `0.01` | Allowed overlap mismatches divided by matches; range `[0, 1)`. |
 | `--twopassMode MODE` | `None` | `None` or `Basic`. |
 | `--twopass1readsN N` | `-1` | First-pass read limit; use `-1` or a positive count. |
 | `--sjdbInsertSave MODE` | `Basic` | `Basic` or `All`; `All` saves the updated index. |
@@ -237,12 +245,12 @@ These controls have no direct STAR equivalent. Benchmark and trace scripts also 
 | Area | Implemented | Missing or limited |
 | --- | --- | --- |
 | Index | FASTA/GTF loading, packed suffix array, annotation tables, incremental junction insertion | Loading STAR's binary index; STAR shared-memory load/remove modes. |
-| Mapping | Single-end and paired-end spliced alignment, seed/window/stitch/select stages, fixed clipping, `Basic` two-pass | Chimeric/fusion alignment, WASP/VCF workflows, adapter clipping, most configurable STAR scoring and filtering options. |
+| Mapping | Single-end and paired-end spliced alignment, seed/window/stitch/select stages, fixed clipping, overlapping-mate merge/remap, `Basic` two-pass | Chimeric/fusion alignment, WASP/VCF workflows, adapter clipping, most configurable STAR scoring and filtering options. |
 | Input | Plain FASTQ; direct SAM/BAM; SmartSeq manifests | Compressed FASTQ, FASTA reads, comma-separated file groups, `readFilesCommand`, general manifest input outside SmartSeq. |
 | Output | SAM, unsorted/sorted BAM, junction tables, mapping statistics | CRAM as a supported interface, BAI/CSI generation, transcriptome BAM, bulk `GeneCounts`, signal tracks, all STAR header/tag customization. BAM read names are limited to 254 bytes and CIGARs to 65,535 operations. |
 | Solo | Barcode extraction/correction, UMI deduplication, gene/SJ/velocity counting, cell filtering, matrix output, SmartSeq, corrected BAM tags | Full validation of every mode/parameter combination on real single-cell datasets; `Transcript3p` remains less tested. |
 | Parallelism and profiling | Shared read-only index, worker-local workspaces, ordered output, BAM compression/sorting, stage timing | Detailed paired-end stage timing. |
 
-Matching one dataset does not prove that every STAR behavior is reproduced. The tests compare records, junctions, statistics, matrices, and selected internal stages. Performance depends on input and output mode; the stored measurements in [docs/VALIDATION.md](docs/VALIDATION.md) are examples, not a promise for every workload.
+Matching one dataset does not prove that every STAR behavior is reproduced. The tests compare records, junctions, statistics, matrices, and selected internal stages. Performance depends on input and output mode; the stored measurements in [docs/STAR_COMPARISON.md](docs/STAR_COMPARISON.md) are examples, not a promise for every workload.
 
 The Solo algorithms retain STAR-derived code and its [license](solo/STAR.LICENSE); [solo/UPSTREAM.json](solo/UPSTREAM.json) records the source revision. Third-party libraries keep their own licenses under `third_party/`.
