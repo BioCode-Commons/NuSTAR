@@ -2,7 +2,7 @@
 
 Start with [cli/align_reads.cpp](cli/align_reads.cpp). It turns command-line arguments into a run configuration and chooses the single-end or paired-end runner. The alignment algorithms live below that layer; they do not parse arguments or open output files.
 
-Most alignment code uses the namespace `nustar::star2711b`. Stage implementations share a read-only reference and keep per-worker workspaces.
+Most alignment code uses the namespace `nustar::star2711b`. The suffix names the STAR version whose behavior it follows. Files such as `star_search.cpp` and `star_window.cpp` are NuSTAR's implementations of those stages, not wrappers that call a STAR executable.
 
 ## From a read to an alignment
 
@@ -45,7 +45,7 @@ The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeli
 
 [cli/genome_generate.cpp](cli/genome_generate.cpp) coordinates index building. [reference/genome.cpp](reference/genome.cpp) owns the reference representation. [annotation/gtf_loader.cpp](annotation/gtf_loader.cpp) reads genes, transcripts, and exons; [annotation/junction_database.cpp](annotation/junction_database.cpp) builds the annotated junction data.
 
-The default production suffix-array build calls bundled libsais through [index/wide_suffix_array.cpp](index/wide_suffix_array.cpp), selected by [index/suffix_array_index.cpp](index/suffix_array_index.cpp). The separate [index/sais.cpp](index/sais.cpp) implementation serves the 32-bit builder interface. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
+The suffix array is built through [index/sais.cpp](index/sais.cpp), which calls the bundled libsais library. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
 
 During construction, `PackedSuffixArray::packAndRelease` consumes the temporary 64-bit positions; on Linux it releases complete source pages as they are packed. Prefix ranges are built after that temporary SA is freed, and the CLI releases construction objects before reloading the saved index. This reduces simultaneous allocations without changing suffix ranks or the file format.
 
@@ -56,8 +56,6 @@ The reference and index are shared between workers. Their owners keep the backin
 ## Two-pass mapping
 
 [runtime/two_pass.cpp](runtime/two_pass.cpp) runs pass one with junction collection, filters the junctions, extends the index, and starts pass two from the original input. [index/junction_insert.cpp](index/junction_insert.cpp) and [index/extension.cpp](index/extension.cpp) do the index update. Pass two uses the same mapping pipeline as an ordinary run.
-
-The extended suffix-array merge partitions output ranks into independent packed ranges. Each worker binary-searches the first insertion for its range, merges the old and new entries, and releases consumed old-array pages. This keeps packed writes disjoint.
 
 This split matters when changing the code: junction discovery belongs to the mapping run, while index insertion belongs to `index/`. The two-pass coordinator should not implement another seed search or stitcher.
 
@@ -107,4 +105,4 @@ Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes
 | [tests/](tests/) | Unit tests, module-boundary checks, and comparisons against STAR. |
 | [third_party/](third_party/) | libsais, HTSlib, and other imported code with their licenses. |
 
-For a change to seed search, start with its stage test and then compare full alignments. For a change to counting, compare matrices as well as BAM tags. Equal final record counts alone can hide different alignments or gene assignments. [CONTRIBUTING.md](CONTRIBUTING.md#tests) lists the available test entry points and configuration.
+For a change to seed search, start with its stage test and then compare full alignments. For a change to counting, compare matrices as well as BAM tags. Equal final record counts alone can hide different alignments or gene assignments. [docs/STAR_COMPARISON.md](docs/STAR_COMPARISON.md#running-the-comparisons) lists the test entry points.
