@@ -1,9 +1,0 @@
-{
-  "schema": 1,
-  "enabled_stages": [
-    "main",
-    "full"
-  ],
-  "reason": "User requested skipping pilot and proceeding directly to the formal experiments. Formal output comparisons remain required.",
-  "changed_at_utc": "2026-11-05T01:42:44.106088+00:00"
-}
