@@ -8,7 +8,7 @@
 <p align="center">
   <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="#usage-and-parameters">Usage</a> &nbsp;·&nbsp;
-  <a href="#codebase">Codebase</a> &nbsp;·&nbsp;
+  <a href="#codebase">Implementation</a> &nbsp;·&nbsp;
   <a href="#benchmarks">Benchmarks</a> &nbsp;·&nbsp;
   <a href="#roadmap">Roadmap</a>
   <br>
@@ -373,17 +373,49 @@ These controls have no direct STAR equivalent. Benchmark and trace scripts also 
 
 <a id="codebase"></a>
 
-## Codebase <sup><sub>[↑ Contents](#contents)</sub></sup>
+## Implementation status <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-| Module | Responsibility |
-| --- | --- |
-| [reference/](reference/), [index/](index/), [annotation/](annotation/) | Native indexes, suffix arrays, and gene/junction annotations |
-| [seed_search/](seed_search/), [window/](window/), [stitching/](stitching/) | Seed lookup, window construction, and candidate alignments |
-| [pipeline/](pipeline/), [selection/](selection/) | Single/paired mapping, overlap refinement, selection, and result projection |
-| [runtime/](runtime/) | Input batches, worker workspaces, ordered output, and two-pass coordination |
-| [reads/](reads/), [sam/](sam/), [bam/](bam/), [output/](output/) | Read input, alignment records, compression, and coordinate sorting |
-| [solo/](solo/) | Barcode correction, UMI deduplication, gene counting, and cell filtering |
-| [tests/](tests/), [tools/](tools/) | Regression tests, tracing, and benchmarking |
+NuSTAR implements reference indexing, spliced alignment, two-pass mapping, and single-cell counting. The flow below shows how these parts fit together. Dashed paths are optional.
+
+```mermaid
+flowchart TB
+    REF["Reference FASTA + GTF"] --> INDEX["Native index"]
+    READS["FASTQ or SAM/BAM reads"] --> PREP["Read preparation"]
+    INDEX --> MAP
+    PREP --> MAP
+    MAP["Read mapping<br/>Seed search → Windows → Stitching → Selection"]
+    MAP -. "Two-pass enabled" .-> EXTEND["Discover junctions<br/>Extend the index"]
+    EXTEND -. "Remap original reads" .-> MAP
+    MAP --> ORDER["Commit results in input order"]
+    ORDER --> OUT["SAM / BAM<br/>Junctions and mapping statistics"]
+    MAP -. "Solo enabled" .-> SOLO["Barcode correction · UMI deduplication<br/>Feature counting · Cell filtering"]
+    SOLO --> MATRIX["Raw and filtered matrices"]
+    SOLO -. "CB / UB tags in sorted BAM" .-> OUT
+
+    classDef input fill:#f0f5f1,stroke:#789482,color:#243c30
+    classDef stage fill:#f5f3fa,stroke:#9383ad,color:#382e4b
+    classDef output fill:#f1f5fa,stroke:#7f96ae,color:#263d55
+    class REF,READS input
+    class INDEX,PREP,MAP,EXTEND,ORDER,SOLO stage
+    class OUT,MATRIX output
+```
+
+Paired-end mapping can refine overlapping mates before selection. Two-pass mapping reruns the reads after index extension. Solo finishes counting before corrected `CB`/`UB` tags are written to sorted BAM.
+
+| Feature | Status | What it covers |
+| :--- | :--- | :--- |
+| Reference indexing | Implemented | FASTA/GTF loading, packed suffix arrays, and gene/junction annotations |
+| Bulk alignment | Implemented | Single-end and paired-end spliced mapping, fixed clipping, and optional mate-overlap refinement |
+| Two-pass mapping | Implemented | Junction discovery, index extension, and remapping from the original reads |
+| Single-cell analysis | Integrated from STARsolo | Barcode correction, UMI deduplication, gene/SJ/velocity counts, cell filtering, and SmartSeq |
+| Input and output | Implemented | Plain FASTQ, SAM/BAM remapping, SAM, unsorted/sorted BAM, junctions, and mapping statistics |
+
+### Inside NuSTAR
+
+- **Index construction:** [libsais64](index/wide_suffix_array.cpp) builds the suffix array. Packing releases consumed temporary pages on Linux; prefix tables are built after the temporary array is freed.
+- **Mapping stages:** seed search, window construction, stitching, and selection exchange explicit results. Each worker reuses its own workspace; the [window builder](window/star_window.cpp) tracks and resets only touched bins.
+- **Two-pass index extension:** the [suffix-array merge](index/junction_insert.cpp) splits output ranks into independent chunks. Workers find their starting insertion by binary search and write separate packed ranges.
+- **Output:** the runtime commits results in input order. [BAM sorting](bam/sink.cpp) writes bounded runs to disk and merges them with a priority queue.
 
 See [supported modes and limits](#usage-and-parameters).
 
@@ -399,15 +431,7 @@ Most alignment code uses the namespace `nustar::star2711b`. Stage implementation
 
 ## From a read to an alignment <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-The main path is:
-
-```text
-CLI -> runtime setup -> input batches
-    -> prepare sequence -> seed search -> windows -> stitching
-    -> select/filter alignments -> SAM records + junctions + statistics
-    -> ordered output
-    -> merge Solo counts -> correct tags -> finish coordinate-sorted BAM
-```
+The overview above shows the main stages. The table below links each stage to its implementation.
 
 The Solo steps run only when requested. A run without alignment output still computes the alignments needed for junctions, statistics, and counting.
 
@@ -520,60 +544,46 @@ For a change to seed search, start with its stage test and then compare full ali
 
 ## Benchmarks <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-Updated measurements are pending.
+Measurements for the current implementation are pending.
 
-| Item | Status |
-| --- | --- |
-| Datasets and reference versions | To be supplied |
-| Hardware, builds, and commands | To be supplied |
-| Runtime and peak memory | To be measured |
-| Alignment and counting outputs | To be checked |
+| Test setup | Details |
+| :--- | :--- |
+| Datasets | Pending: accessions, read layout, read counts, and subset selection |
+| Reference | Pending: genome FASTA and GTF versions |
+| Hardware | Pending: CPU, RAM, operating system, and storage |
+| Software and run settings | Pending: versions, build flags, commands, threads, repetitions, and cache conditions |
 
-<details>
-<summary><strong>Benchmark setup and results template</strong></summary>
-
-### Setup
-
-| Field | Value |
-| --- | --- |
-| Dataset, accession, read layout, and subset selection | To be supplied |
-| Reference FASTA and GTF versions | To be supplied |
-| CPU, RAM, operating system, and storage | To be supplied |
-| Software versions, build flags, and commands | To be supplied |
-| Threads, repetitions, cache state, and run order | To be supplied |
-
-### Results
-
-| Workload | Runtime | Peak RSS | Output checks |
-| --- | --- | --- | --- |
+| Workload | STAR time / peak RSS | NuSTAR time / peak RSS | Output comparison |
+| :--- | :--- | :--- | :--- |
 | Index construction | Pending | Pending | Pending |
-| Single-end and paired-end alignment | Pending | Pending | Pending |
+| Single-end / paired-end alignment | Pending | Pending | Pending |
 | Paired overlap refinement | Pending | Pending | Pending |
-| Two-pass alignment | Pending | Pending | Pending |
+| Two-pass mapping | Pending | Pending | Pending |
 | Sorted BAM | Pending | Pending | Pending |
-| Solo counting and corrected tags | Pending | Pending | Pending |
+| Solo counting | Pending | Pending | Pending |
 
-Record repeated process timings and output checks alongside each result. Check alignment records and tags, junctions, mapping statistics, and requested Solo matrices. Record index construction separately from alignment.
-
-</details>
+Output checks will report whether alignment records and tags, junctions, mapping statistics, and Solo matrices match. File-byte equality will be reported separately from decoded-record equality.
 
 <a id="roadmap"></a>
 
 ## Roadmap <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-| Area | Next step | How to check the result |
+| Area | Planned work | Validation |
 | :--- | :--- | :--- |
-| Reproducible benchmarks | Fill in the benchmark template using paired runs of the current binaries | Record commands, binary hashes, hardware, cache conditions, repeated timings, and output comparisons |
-| Bulk RNA-seq validation | Add large single-end and paired-end record comparisons and thread-scaling runs | Compare full alignment records, junctions, and non-time statistics with STAR |
-| Two-pass performance | Measure the updated insertion and merge stages | Repeat identical inputs with both engines; compare both passes and final outputs |
-| Single-cell coverage | Test more real datasets and chemistries, corrected BAM tags, and less-tested mode combinations | Compare raw/filtered matrices, summaries, and corrected tags; add truth-based evaluations where data allow |
-| STAR feature coverage | Scope compressed FASTQ, additional output modes, and advanced alignment workflows | Define supported options and comparison fixtures before implementing each feature |
+| Benchmarks | Publish runtime, peak memory, and output checks for the current implementation | Repeat runs with the same inputs and settings; report variation |
+| Bulk RNA-seq | Expand single-end, paired-end, overlap, and thread-scaling tests | Check full alignment records, junctions, and mapping statistics |
+| Two-pass mapping | Profile junction insertion and suffix-array merging | Check both passes and final alignments |
+| Single-cell analysis | Cover more datasets, chemistries, and counting modes | Check raw/filtered matrices, summaries, and corrected tags |
+| Input and output | Add compressed FASTQ and scope further output modes | Add regression tests for each supported workflow |
 
 <a id="ai-use-and-review"></a>
 
 ## AI use and review <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-*Placeholder.*
+| Item | Status |
+| :--- | :--- |
+| AI use | Pending: tools used and their role |
+| Comprehensive human audit | Pending: completion status, reviewers, and scope |
 
 <a id="questions-and-contributions"></a>
 
@@ -586,6 +596,9 @@ Visit [BioCode Commons](https://biocode-commons.github.io/) for projects, contri
 ## Acknowledgments and references <sup><sub>[↑ Contents](#contents)</sub></sup>
 
 NuSTAR builds on [STAR](https://github.com/alexdobin/STAR) and STARsolo by Alexander Dobin and collaborators. Please cite the original work:
+
+- [STAR: ultrafast universal RNA-seq aligner](https://doi.org/10.1093/bioinformatics/bts635). Dobin et al., *Bioinformatics*, 2013.
+- [STARsolo: accurate, fast and versatile mapping/quantification of single-cell and single-nucleus RNA-seq data](https://doi.org/10.1101/2021.05.05.442755). Kaminow, Yunusov, and Dobin, *bioRxiv*, 2021.
 
 <details>
 <summary><strong>BibTeX references</strong></summary>
