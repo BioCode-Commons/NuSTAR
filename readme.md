@@ -8,9 +8,8 @@
 <p align="center">
   <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="#usage-and-parameters">Usage</a> &nbsp;·&nbsp;
-  <a href="#codebase">Implementation</a> &nbsp;·&nbsp;
-  <a href="#benchmarks">Benchmarks</a> &nbsp;·&nbsp;
-  <a href="#roadmap">Roadmap</a>
+  <a href="#implementation-status-and-roadmap">Implementation Status and Roadmap</a> &nbsp;·&nbsp;
+  <a href="#benchmarks">Benchmarks</a>
   <br>
   <a href="#ai-use-and-review">AI use and review</a> &nbsp;·&nbsp;
   <a href="#questions-and-contributions">Questions and contributions</a> &nbsp;·&nbsp;
@@ -372,25 +371,27 @@ These controls have no direct STAR equivalent. Benchmark and trace scripts also 
 </details>
 
 <a id="codebase"></a>
+<a id="implementation-status-and-roadmap"></a>
 
-## Implementation status <sup><sub>[↑ Contents](#contents)</sub></sup>
+## Implementation Status and Roadmap <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-NuSTAR implements reference indexing, spliced alignment, two-pass mapping, and single-cell counting. The flow below shows how these parts fit together. Dashed paths are optional.
+NuSTAR implements reference indexing, spliced alignment, two-pass mapping, and single-cell counting. The flow below shows how these parts fit together, with the main `.cpp` entry points in each box. Click a filename to open that source file. Dashed paths are optional.
 
 ```mermaid
 flowchart TB
-    REF["Reference FASTA + GTF"] --> INDEX["Native index"]
-    READS["FASTQ or SAM/BAM reads"] --> PREP["Read preparation"]
+    REF["Load reference FASTA + GTF<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/reference/genome.cpp' target='_blank'>reference/genome.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/annotation/gtf_loader.cpp' target='_blank'>annotation/gtf_loader.cpp</a></small>"] --> INDEX["Build native index<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/cli/genome_generate.cpp' target='_blank'>cli/genome_generate.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/index/suffix_array_index.cpp' target='_blank'>index/suffix_array_index.cpp</a></small>"]
+    READS["Read FASTQ or SAM/BAM<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/reads/fastq.cpp' target='_blank'>reads/fastq.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/bam/source.cpp' target='_blank'>bam/source.cpp</a></small>"] --> PREP["Prepare reads<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/reads/fastq_prepare.cpp' target='_blank'>reads/fastq_prepare.cpp</a></small>"]
     INDEX --> MAP
     PREP --> MAP
-    MAP["Read mapping<br/>Seed search → Windows → Stitching → Selection"]
-    MAP -. "Two-pass enabled" .-> EXTEND["Discover junctions<br/>Extend the index"]
+    MAP["Map and select alignments<br/>Seed search → Windows → Stitching → Selection<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/pipeline/single_end/pipeline.cpp' target='_blank'>pipeline/single_end/pipeline.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/pipeline/paired_end/pipeline.cpp' target='_blank'>pipeline/paired_end/pipeline.cpp</a></small>"]
+    MAP -. "Two-pass enabled" .-> EXTEND["Discover junctions and extend the index<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/runtime/two_pass.cpp' target='_blank'>runtime/two_pass.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/index/junction_insert.cpp' target='_blank'>index/junction_insert.cpp</a></small>"]
     EXTEND -. "Remap original reads" .-> MAP
-    MAP --> ORDER["Commit results in input order"]
-    ORDER --> OUT["SAM / BAM<br/>Junctions and mapping statistics"]
-    MAP -. "Solo enabled" .-> SOLO["Barcode correction · UMI deduplication<br/>Feature counting · Cell filtering"]
-    SOLO --> MATRIX["Raw and filtered matrices"]
+    MAP --> ORDER["Commit results in input order<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/runtime/ordered_alignment.cpp' target='_blank'>runtime/ordered_alignment.cpp</a></small>"]
+    ORDER --> OUT["SAM / BAM, junctions, and statistics<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/sam/encode.cpp' target='_blank'>sam/encode.cpp</a> · <a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/bam/sink.cpp' target='_blank'>bam/sink.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/splice_junction/star_junction.cpp' target='_blank'>splice_junction/star_junction.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/statistics/star_statistics.cpp' target='_blank'>statistics/star_statistics.cpp</a></small>"]
+    MAP -. "Solo enabled" .-> SOLO["Barcode correction · UMI deduplication<br/>Feature counting · Cell filtering<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/session.cpp' target='_blank'>solo/session.cpp</a> · <a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/worker.cpp' target='_blank'>solo/worker.cpp</a></small>"]
+    SOLO --> MATRIX["Raw and filtered matrices<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/matrix/write.cpp' target='_blank'>solo/matrix/write.cpp</a></small>"]
     SOLO -. "CB / UB tags in sorted BAM" .-> OUT
+
 
     classDef input fill:#f0f5f1,stroke:#789482,color:#243c30
     classDef stage fill:#f5f3fa,stroke:#9383ad,color:#382e4b
@@ -540,33 +541,9 @@ For a change to seed search, start with its stage test and then compare full ali
 
 </details>
 
-<a id="benchmarks"></a>
-
-## Benchmarks <sup><sub>[↑ Contents](#contents)</sub></sup>
-
-Measurements for the current implementation are pending.
-
-| Test setup | Details |
-| :--- | :--- |
-| Datasets | Pending: accessions, read layout, read counts, and subset selection |
-| Reference | Pending: genome FASTA and GTF versions |
-| Hardware | Pending: CPU, RAM, operating system, and storage |
-| Software and run settings | Pending: versions, build flags, commands, threads, repetitions, and cache conditions |
-
-| Workload | STAR time / peak RSS | NuSTAR time / peak RSS | Output comparison |
-| :--- | :--- | :--- | :--- |
-| Index construction | Pending | Pending | Pending |
-| Single-end / paired-end alignment | Pending | Pending | Pending |
-| Paired overlap refinement | Pending | Pending | Pending |
-| Two-pass mapping | Pending | Pending | Pending |
-| Sorted BAM | Pending | Pending | Pending |
-| Solo counting | Pending | Pending | Pending |
-
-Output checks will report whether alignment records and tags, junctions, mapping statistics, and Solo matrices match. File-byte equality will be reported separately from decoded-record equality.
-
 <a id="roadmap"></a>
 
-## Roadmap <sup><sub>[↑ Contents](#contents)</sub></sup>
+### Roadmap <sup><sub>[↑ Contents](#contents)</sub></sup>
 
 | Area | Planned work | Validation |
 | :--- | :--- | :--- |
@@ -575,6 +552,12 @@ Output checks will report whether alignment records and tags, junctions, mapping
 | Two-pass mapping | Profile junction insertion and suffix-array merging | Check both passes and final alignments |
 | Single-cell analysis | Cover more datasets, chemistries, and counting modes | Check raw/filtered matrices, summaries, and corrected tags |
 | Input and output | Add compressed FASTQ and scope further output modes | Add regression tests for each supported workflow |
+
+<a id="benchmarks"></a>
+
+## Benchmarks <sup><sub>[↑ Contents](#contents)</sub></sup>
+
+Measurements for the current implementation are pending. For datasets, hardware, performance, and output checks, see [benchmark details](BENCHMARKS.md).
 
 <a id="ai-use-and-review"></a>
 
