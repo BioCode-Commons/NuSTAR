@@ -2,7 +2,7 @@
 
 # NuSTAR
 
-**RNA-seq alignment and single-cell quantification in C++20.**
+**NuSTAR is a reimplementation of STAR, a popular RNA-seq aligner.**
 
 [Quick start](#quick-start) · [Codebase](#codebase) · [Benchmarks](#benchmarks) · [Roadmap](#roadmap) · [Usage](docs/USAGE.md) · [Community](https://biocode-commons.github.io/)
 
