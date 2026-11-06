@@ -1,6 +1,6 @@
 # NuSTAR
 
-RNA-seq alignment and single-cell quantification in C++20. NuSTAR supports single-end and paired-end reads, overlap refinement, two-pass mapping, and STARsolo.
+NuSTAR is a reimplementation of STAR, a popular RNA-seq aligner. It supports single-end and paired-end reads, overlap refinement, two-pass mapping, and STARsolo.
 
 ## Contents
 
