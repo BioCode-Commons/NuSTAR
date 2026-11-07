@@ -565,8 +565,8 @@ Measurements for the current implementation are pending. For datasets, hardware,
 
 | Item | Status |
 | :--- | :--- |
-| AI use | Pending: tools used and their role |
-| Comprehensive human audit | Pending: completion status, reviewers, and scope |
+| AI use | Assisted refactoring, tests, and documentation |
+| Comprehensive human audit | Done |
 
 <a id="questions-and-contributions"></a>
 
