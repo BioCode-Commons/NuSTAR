@@ -63,10 +63,13 @@ build/release/nustar --runMode genomeGenerate \
   --genomeFastaFiles reference/GRCh38.fa \
   --sjdbGTFfile reference/genes.gtf \
   --sjdbOverhang 100 \
-  --runThreadN 8
+  --genomeSAalgorithm libsais64 \
+  --runThreadN 32
 ```
 
 Set `--sjdbOverhang` to read length minus one. Solo gene counting needs GTF annotation tables; small genomes need a smaller `--genomeSAindexNbases`.
+
+`libsais64` is the default construction backend. Use `--genomeSAalgorithm libsais40` for the compact workspace described in [suffix-array construction](#suffix-array-construction).
 
 <a id="3-align-paired-end-reads"></a>
 
@@ -98,6 +101,36 @@ Run the examples from the repository root after building `build/release/nustar` 
 <a id="workflows"></a>
 
 ## Workflows <sup><sub>[↑ Contents](#contents)</sub></sup>
+
+<a id="suffix-array-construction"></a>
+
+### Choose a suffix-array construction backend
+
+`--genomeSAalgorithm` applies to `--runMode genomeGenerate`. Only `libsais64` and `libsais40` are supported:
+
+| Backend | Construction workspace | Use |
+| --- | --- | --- |
+| `libsais64` | Native 64-bit suffix-array entries | Default parallel libsais path and comparison baseline. |
+| `libsais40` | Five-byte suffix-array entries, with in-place final packing | Experimental low-memory backend based on libsais 2.12.1. Physical sequence length must be below `2^38-1`; this includes the constructed reverse-complement and junction sequences. |
+
+For a compact human index with construction profiling:
+
+```sh
+build/release/nustar --runMode genomeGenerate \
+  --genomeDir index/human-compact \
+  --genomeFastaFiles reference/GRCh38.fa \
+  --sjdbGTFfile reference/genes.gtf \
+  --sjdbOverhang 100 \
+  --genomeSAalgorithm libsais40 \
+  --runThreadN 32 \
+  --profileGenomeGenerate
+```
+
+`--runThreadN` controls construction parallelism. `--profileGenomeGenerate` takes no value and reports stage durations; `IndexBuild` records also report cumulative peak RSS on Unix. Cumulative peak RSS is not the current memory usage of each stage.
+
+Both backends produce the same v4 index semantics. Mapping does not require repeating the construction algorithm option. An explicitly selected backend reports an error on failure or capacity overflow instead of switching backends. Build provenance is recorded in `nustarGenomeParameters.txt`.
+
+`libsais40` reuses its five-byte workspace when packing the final array, using a fixed 32 KiB buffer and releasing unused tail pages on Unix. It does not allocate a second full packed SA. Eligible recursive subproblems use 32-bit libsais within the existing workspace. Alphabet-sized recursive buckets and other index structures can still require extra memory, so five bytes per entry is not a bound on total process memory.
 
 ### Single-end alignment
 
@@ -271,6 +304,7 @@ Expand a group for defaults, accepted values, and constraints.
 | `--sjdbOverhang N` | `100` | Junction flank length, used when building or extending the index. |
 | `--genomeChrBinNbits N` | `18` | Chromosome padding/bin bits, 8–30. |
 | `--genomeSAindexNbases N` | `14` | SA prefix length, 1–15. Reduce for small genomes. |
+| `--genomeSAalgorithm NAME` | `libsais64` | Index construction only: `libsais64` or `libsais40`. See [backend selection and memory behavior](#suffix-array-construction). |
 | `--limitSjdbInsertNsj N` | `1000000` | Total junction count after insertion, including existing junctions. Choose a value large enough for the intended annotation and discovered junctions; this is not a current benchmark result. |
 | `--sjdbGTFchrPrefix TEXT` | `-` | Prefix for GTF chromosome names; `-` adds nothing. |
 | `--sjdbGTFfeatureExon NAME` | `exon` | GTF feature used as an exon. |
@@ -361,7 +395,8 @@ Not every combination is valid. For example, `CB_UMI_Complex` uses `Exact`, `1MM
 | `--io-backend mmap` or `buffered` | FASTQ transport; default `mmap`. |
 | `--profile-stages` | Detailed mapping-stage timing, currently single-end only. |
 | `--profile-runtime` | Runtime timing for single-end or paired-end runs. |
-| `--profileGenomeGenerate` | Index-building timing. |
+| `--genomeSAalgorithm libsais64` or `libsais40` | Select the index construction backend; default `libsais64`. |
+| `--profileGenomeGenerate` | Flag without a value: index-stage timing and cumulative peak RSS in `IndexBuild` records on Unix. |
 | `upgradeIndex SOURCE_DIR NEW_DIR` | Upgrade an older native index without rebuilding the suffix array. |
 
 These controls have no direct STAR equivalent. Benchmark and trace scripts also have their own tool-specific arguments; use their `--help` output.
@@ -413,7 +448,7 @@ Paired-end mapping can refine overlapping mates before selection. Two-pass mappi
 
 ### Inside NuSTAR
 
-- **Index construction:** [libsais64](index/wide_suffix_array.cpp) builds the suffix array. Packing releases consumed temporary pages on Linux; prefix tables are built after the temporary array is freed.
+- **Index construction:** select the default [libsais64](index/wide_suffix_array.cpp) or compact [libsais40](index/libsais40.cpp) backend. The former streams into separate packed storage while releasing consumed source pages on Linux; the latter packs in place and transfers ownership of its workspace. Prefix tables are built after conversion.
 - **Mapping stages:** seed search, window construction, stitching, and selection exchange explicit results. Each worker reuses its own workspace; the [window builder](window/star_window.cpp) tracks and resets only touched bins.
 - **Two-pass index extension:** the [suffix-array merge](index/junction_insert.cpp) splits output ranks into independent chunks. Workers find their starting insertion by binary search and write separate packed ranges.
 - **Output:** the runtime commits results in input order. [BAM sorting](bam/sink.cpp) writes bounded runs to disk and merges them with a priority queue.
@@ -467,9 +502,9 @@ The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeli
 
 [cli/genome_generate.cpp](cli/genome_generate.cpp) coordinates index building. [reference/genome.cpp](reference/genome.cpp) owns the reference representation. [annotation/gtf_loader.cpp](annotation/gtf_loader.cpp) reads genes, transcripts, and exons; [annotation/junction_database.cpp](annotation/junction_database.cpp) builds the annotated junction data.
 
-The default production suffix-array build calls bundled libsais through [index/wide_suffix_array.cpp](index/wide_suffix_array.cpp), selected by [index/suffix_array_index.cpp](index/suffix_array_index.cpp). The separate [index/sais.cpp](index/sais.cpp) implementation serves the 32-bit builder interface. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
+The two suffix-array construction backends are [index/wide_suffix_array.cpp](index/wide_suffix_array.cpp) (`libsais64`, default) and [index/libsais40.cpp](index/libsais40.cpp) (`libsais40`), selected by [index/suffix_array_index.cpp](index/suffix_array_index.cpp). The compact implementation uses the adapted kernels in [third_party/libsais40/](third_party/libsais40/); its [NOTICE](third_party/libsais40/NOTICE) records provenance and storage details. [index/packed_suffix_array.cpp](index/packed_suffix_array.cpp) handles packed entries. [index/star_prefix.cpp](index/star_prefix.cpp) builds and queries the prefix search data. [index/star_rank.cpp](index/star_rank.cpp) preserves the required suffix ordering.
 
-During construction, `PackedSuffixArray::packAndRelease` consumes the temporary 64-bit positions; on Linux it releases complete source pages as they are packed. Prefix ranges are built after that temporary SA is freed, and the CLI releases construction objects before reloading the saved index. This reduces simultaneous allocations without changing suffix ranks or the file format.
+During construction, `PackedSuffixArray::packAndRelease` consumes temporary positions. The 64-bit path streams into a separate packed allocation while releasing consumed source pages on Linux. The five-byte path packs in place, transfers the original allocation to the final array, and unmaps unused tail pages on Unix. For the current human reference, its final entries use 33 bits. Prefix ranges are built after conversion, and the CLI releases construction objects before reloading the saved index. Suffix ranks and the v4 file format are unchanged.
 
 [index/suffix_array_index.cpp](index/suffix_array_index.cpp) loads and saves the native index. [index/backend.hpp](index/backend.hpp) is the interface used by mapping code. The index representation stays behind that interface so seed search does not need to know how files were opened.
 
@@ -544,6 +579,32 @@ For a change to seed search, start with its stage test and then compare full ali
 <a id="roadmap"></a>
 
 ### Roadmap <sup><sub>[↑ Contents](#contents)</sub></sup>
+
+<a id="star-feature-todo"></a>
+
+#### STAR feature TODO list
+
+These unchecked items are documented STAR 2.7.11b capabilities that are not yet available through NuSTAR's supported command-line workflows. The list covers major gaps, not every STAR parameter. It was checked against the [official STAR parameter reference](https://github.com/alexdobin/STAR/blob/2.7.11b/source/parametersDefault) and NuSTAR's [alignment](cli/align_reads.cpp) and [index-building](cli/genome_generate.cpp) parsers.
+
+- [ ] Compressed FASTQ through `--readFilesCommand`, FASTA reads, and multi-file/manifest input outside SmartSeq.
+- [ ] Adapter/poly(A) clipping, including `--clip3pAdapterSeq` and `--clipAdapterType CellRanger4`.
+- [ ] Chimeric alignments and fusion-supporting output (`--chimSegmentMin`, `--chimOutType`).
+- [ ] WASP filtering and VCF-based haploid/diploid references (`--waspOutputMode`, `--genomeTransformType`).
+- [ ] Configurable scoring, mapping filters, intron limits, and end-alignment policies (`--score*`, `--outFilter*`, `--alignEndsType`).
+- [ ] User-supplied junction lists and mapping-time GTF insertion (`--sjdbFileChrStartEnd`, `--sjdbGTFfile`).
+- [ ] Mapping-time reference additions through `--genomeFastaFiles`.
+- [ ] STAR binary-index compatibility and persistent shared-memory management (`--genomeLoad`).
+- [ ] Configurable index sparsity and construction RAM limits (`--genomeSAsparseD`, `--limitGenomeGenerateRAM`).
+- [ ] Bulk gene counting and transcriptome alignments (`--quantMode GeneCounts` / `TranscriptomeSAM`).
+- [ ] bedGraph/wiggle signal tracks (`--outWigType`, `--outWigStrand`, `--outWigNorm`).
+- [ ] Existing-alignment postprocessing and duplicate marking (`--runMode inputAlignmentsFromBAM`, `--bamRemoveDuplicatesType`).
+- [ ] Separate unmapped FASTA/FASTQ output and `--outSAMunmapped Within KeepPairs`.
+- [ ] Complete SAM/BAM header, tag, read-group, MAPQ, primary-alignment, and FLAG customization.
+- [ ] Alignment output to stdout (`--outStd`).
+- [ ] Parameter files and configurable random seeds (`--parametersFiles`, `--runRNGseed`).
+- [ ] GTF coordinate liftover (`--runMode liftOver`, `--genomeChainFiles`).
+
+Fixed clipping, ordinary SAM/BAM remapping, overlap refinement, `Basic` two-pass mapping, and the listed Solo counting modes are already implemented. Broader validation of those features is tracked separately below.
 
 | Area | Planned work | Validation |
 | :--- | :--- | :--- |
