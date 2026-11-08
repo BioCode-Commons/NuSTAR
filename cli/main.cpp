@@ -7,7 +7,7 @@
 int main(int argc, char** argv) {
     if (argc == 2 && std::string_view(argv[1]) == "--help") {
         std::cout << "NuSTAR\n"
-                     "Usage: nustar --runMode genomeGenerate --genomeFastaFiles FILE... --genomeDir DIR [--sjdbGTFfile FILE --sjdbOverhang N] [--genomeChrBinNbits N] [--genomeSAindexNbases N] [--runThreadN N] [--profileGenomeGenerate]\n"
+                     "Usage: nustar --runMode genomeGenerate --genomeFastaFiles FILE... --genomeDir DIR [--sjdbGTFfile FILE --sjdbOverhang N] [--genomeChrBinNbits N] [--genomeSAindexNbases N] [--genomeSAalgorithm libsais64|libsais40] [--runThreadN N] [--profileGenomeGenerate]\n"
                      "Upgrade an existing index without rebuilding SA: upgradeIndex SOURCE_DIR NEW_DIR.\n"
                      "Align reads: [--runMode alignReads] --genomeDir DIR --readFilesIn MATE1.fastq [MATE2.fastq] --runThreadN N --outFileNamePrefix PREFIX\n"
                      "BAM input: --readFilesType SAM SE|PE; --readFilesSAMattrKeep All|None|tags.\n"

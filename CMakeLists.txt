@@ -49,8 +49,8 @@ target_link_libraries(nustar_annotation PUBLIC nustar_contracts)
 add_library(nustar_reference_service STATIC runtime/reference_service.cpp)
 target_link_libraries(nustar_reference_service PUBLIC nustar_reference nustar_annotation)
 
-add_library(nustar_genomegenerate STATIC index/sais.cpp
-    index/wide_suffix_array.cpp index/star_rank.cpp)
+add_library(nustar_genomegenerate STATIC
+    index/wide_suffix_array.cpp index/compact_suffix_array.cpp index/libsais40.cpp index/star_rank.cpp)
 target_link_libraries(nustar_genomegenerate PUBLIC nustar_contracts nustar_libsais)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(nustar_genomegenerate PUBLIC OpenMP::OpenMP_CXX)

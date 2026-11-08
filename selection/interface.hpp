@@ -9,6 +9,9 @@ namespace nustar::star2711b {
 class IAlignmentSelector {
 public:
     virtual ~IAlignmentSelector() = default;
+    // Validate once when composing a pipeline, before processing any reads.
+    virtual Status validateConfig(const SelectionConfig&) const { return std::monostate{}; }
+    // The caller supplies a configuration accepted by validateConfig().
     virtual Status select(const MappingRead&, const CandidateSet&, const SelectionConfig&,
         LegacyRandomState&, SelectionResult& out) const = 0;
 };

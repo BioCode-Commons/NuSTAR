@@ -47,6 +47,7 @@ int runGenomeGenerate(int argc, char** argv, int first_option) {
         annotation.sjdbOverhang = 100;
         annotation.limitSjdbInsertNsj = 1000000;
         std::uint64_t chromosome_bits = 18, prefix_bases = 14, runThreadN = 1;
+        std::string sa_algorithm="libsais64";
         bool profile = false;
         auto last_stage = std::chrono::steady_clock::now();
         auto mark = [&](std::string_view name) {
@@ -85,6 +86,11 @@ int runGenomeGenerate(int argc, char** argv, int first_option) {
                 chromosome_bits = unsignedOption(value(), option, 8, 30);
             else if (option == "--runThreadN")
                 runThreadN = unsignedOption(value(), "--runThreadN", 1, 256);
+            else if(option=="--genomeSAalgorithm") {
+                sa_algorithm=value();
+                if(sa_algorithm!="libsais64" && sa_algorithm!="libsais40")
+                    throw std::invalid_argument("--genomeSAalgorithm must be libsais64 or libsais40");
+            }
             else if (option == "--genomeSAindexNbases")
                 prefix_bases = unsignedOption(value(), option, 1, 15);
             else if (option == "--limitSjdbInsertNsj")
@@ -126,7 +132,9 @@ int runGenomeGenerate(int argc, char** argv, int first_option) {
             BackendOptions{"nustar-sa-v4", 4,
                 {OptionProvenance{"genomeSAindexNbases", {},
                     {std::to_string(prefix_bases)}, "CLI"},
-                 OptionProvenance{"runThreadN", {}, {std::to_string(runThreadN)}, "CLI"}}}};
+                 OptionProvenance{"runThreadN", {}, {std::to_string(runThreadN)}, "CLI"},
+                 OptionProvenance{"genomeSAalgorithm", {}, {sa_algorithm}, "CLI"}}}};
+        if(profile) search.options.values.push_back(OptionProvenance{"profileGenomeGenerate", {}, {"1"}, "CLI"});
         SuffixArrayIndexBackend backend;
         auto index = take(backend.build(search, ready.lease));
         mark("SAIS/prefix/write");
@@ -150,6 +158,9 @@ int runGenomeGenerate(int argc, char** argv, int first_option) {
         manifest << "builder\tnustar 0.2\n"
                  << "referenceFormat\tnustar-reference-v1\n"
                  << "indexFormat\tnustar-sa-v4\n"
+                 << "saBackend\t" << sa_algorithm << '\n'
+                 << "saRequestedThreads\t" << runThreadN << '\n'
+                 << "saImplementation\t" << (sa_algorithm=="libsais40"?"libsais40-v1-2.12.1":"libsais64-2.12.1") << '\n'
                  << "saAlgorithm\t" << suffix_index->algorithmId() << '\n'
                  << "saPackedBitWidth\t"
                  << static_cast<unsigned>(suffix_index->suffixArray().bitWidth()) << '\n'

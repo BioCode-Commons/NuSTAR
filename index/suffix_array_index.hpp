@@ -83,7 +83,9 @@ class SuffixArrayIndexBackend final : public IIndexBackend {
 public:
     explicit SuffixArrayIndexBackend(SuffixArrayBuilderLease builder = {});
     std::string_view backendId() const noexcept override { return "nustar-sa"; }
-    std::string_view builderId() const noexcept { return builder_->algorithmId(); }
+    std::string_view builderId() const noexcept {
+        return builder_ ? builder_->algorithmId() : "libsais64-2.12.1";
+    }
     Result<SearchIndexLease> load(const SearchIndexRequest&, ReferenceLease base) override;
     Result<SearchIndexLease> build(const SearchIndexRequest&, ReferenceLease) override;
     Status save(const ISearchIndex&, const std::filesystem::path&) override;

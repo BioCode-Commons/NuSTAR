@@ -12,7 +12,6 @@ The original STAR repository is available at [https://github.com/alexdobin/STAR]
 
 Questions about STAR are also welcome in this repository. Having studied STAR’s source code in detail, we will do our best to answer them.
 
-
 ## Build
 
 You need CMake 3.20 or newer, a C++20 compiler, a C99 compiler, and the zlib development package. OpenMP is optional. HTSlib and libsais are included in `third_party/`.
@@ -254,3 +253,28 @@ These controls have no direct STAR equivalent. Benchmark and trace scripts also 
 Matching one dataset does not prove that every STAR behavior is reproduced. The tests compare records, junctions, statistics, matrices, and selected internal stages. Performance depends on input and output mode; the stored measurements in [docs/STAR_COMPARISON.md](docs/STAR_COMPARISON.md) are examples, not a promise for every workload.
 
 The Solo algorithms retain STAR-derived code and its [license](solo/STAR.LICENSE); [solo/UPSTREAM.json](solo/UPSTREAM.json) records the source revision. Third-party libraries keep their own licenses under `third_party/`.
+
+### Suffix array construction backends
+
+`genomeGenerate` supports `--genomeSAalgorithm libsais64|libsais40`:
+
+- `libsais64` (default): the existing parallel 64-bit construction path, preserving output compatibility.
+- `libsais40`: an experimental adaptation of libsais 2.12.1 with 5-byte construction slots and physical sequence lengths below `2^38-1`. Two bits are reserved for algorithm state. Scalar arithmetic and bounded thread caches use native integers. Suitable recursive problems use 32-bit libsais inside the same workspace; larger problems retain compressed slots. No full-length 64-bit SA or ISA is allocated. `--runThreadN` controls the thread count.
+
+Example:
+
+```sh
+nustar --runMode genomeGenerate --genomeFastaFiles reference.fa \
+  --genomeDir index-libsais40 --genomeSAalgorithm libsais40 \
+  --runThreadN 32 --profileGenomeGenerate
+```
+
+Both backends produce the same index semantics and v4 data layout; algorithm provenance fields may differ. Loading an index does not require specifying its construction algorithm. An explicitly selected backend reports an error if construction fails or its capacity is exceeded, without falling back to another backend. Internal 32-bit recursion is part of the libsais algorithm. The existing custom 32-bit builder interface remains compatible, but cannot be combined with an explicit `genomeSAalgorithm` option.
+
+The compact backend uses a bitmap for STAR suffix equality flags. Final packing is in place: a fixed 32 KiB read buffer protects unread entries while the output overwrites the front of the original allocation. The packed array takes ownership of that allocation, with seven readable guard bytes; unused tail pages are unmapped on Unix. For the current human reference, 40-bit construction slots become 33-bit final entries without allocating a second full SA. The original `libsais64` path keeps its separate streaming conversion for comparison.
+
+The whole build is not restricted to `5N` plus constant scratch: reference data, distance filters and prefix tables require memory. libsais recursion can also allocate alphabet-sized bucket storage when its reusable workspace is insufficient (5-byte buckets in compact recursion, or 4-byte buckets in native 32-bit recursion). See `third_party/libsais40/NOTICE` for provenance and storage details.
+
+`--profileGenomeGenerate` reports elapsed time for sorting, normalization, packing, prefix construction, and writing, along with cumulative peak RSS. Cumulative peak RSS is not the current memory usage of each stage. The main workspace is 37.5% smaller than a 64-bit array; process-wide peak memory and performance must be measured on the full reference. The experimental backend does not automatically become the default.
+
+See `third_party/libsais40/NOTICE` and `LICENSE` for the Apache-2.0 WITH LLVM-exception adaptation. `third_party/libsais40/regenerate.py` reproduces the adapted kernels from the pinned vendored source and rejects an unexpected upstream hash.

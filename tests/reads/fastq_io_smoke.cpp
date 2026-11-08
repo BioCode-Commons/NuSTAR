@@ -61,6 +61,23 @@ void check(const IReadSourceBackend& backend, const std::filesystem::path& dir) 
     InputSpec empty{Layout::SE, {InputGroup{{dir/"empty.fq", {}}}}, {}, {}};
     auto empty_source = open(backend, empty);
     expect(!next(*empty_source), "empty FASTQ did not reach EOF");
+
+    InputSpec separators{Layout::SE, {InputGroup{{dir/"separators.fq", {}}}}, {}, {}};
+    auto permissive = open(backend, separators);
+    for (unsigned i = 0; i < 2; ++i) {
+        auto batch = next(*permissive);
+        expect(batch && batch->fragments.size() == 1 &&
+               batch->fragments[0].mates[0]->sequence == "AC" &&
+               *batch->fragments[0].mates[0]->quality == "!!",
+               "STAR-compatible third-line consumption failed");
+    }
+    expect(!next(*permissive), "third-line fixture has extra records");
+    for (const auto* name : {"bad-header.fq", "bad-quality.fq", "truncated.fq"}) {
+        InputSpec invalid{Layout::SE, {InputGroup{{dir/name, {}}}}, {}, {}};
+        auto rejected = open(backend, invalid);
+        expect(std::holds_alternative<Failure>(rejected->next(1)),
+               "required FASTQ framing or quality validation was removed");
+    }
 }
 
 } // namespace
@@ -74,6 +91,10 @@ int main(int argc, char** argv) {
         write(dir/"two.fq", "@r3\nTA\n+\n$$\n");
         write(dir/"mates.fq", "@r1\nGT\n+\n!!\n");
         write(dir/"empty.fq", "");
+        write(dir/"separators.fq", "@r1\nAC\nignored\n!!\n@r2\nAC\n\n!!\n");
+        write(dir/"bad-header.fq", "r1\nAC\n+\n!!\n");
+        write(dir/"bad-quality.fq", "@r1\nAC\n+\n!\n");
+        write(dir/"truncated.fq", "@r1\nAC\n+\n");
         check(memoryMappedFastqBackend(), dir);
         check(bufferedFastqBackend(), dir);
         // Cross several mmap release boundaries. Keep an earlier batch alive

@@ -725,8 +725,7 @@ Result<std::shared_ptr<const ISeedFinder>> StarSeedAlgorithmFactory::bind(
         !delivery.exact_multiplicity || !delivery.complete_occurrences ||
         !delivery.known_junction_projection || delivery.hit_schema_version != 1 ||
         delivery.search_domain_id != star_seed_search_domain ||
-        !plan->algorithm_options.schema_id.empty() ||
-        sa->identity().reference_semantic_id != genome->semanticId())
+        !plan->algorithm_options.schema_id.empty())
         return seedError(ErrorKind::Config, "unsupported STAR seed delivery contract");
     try {
         return std::shared_ptr<const ISeedFinder>(

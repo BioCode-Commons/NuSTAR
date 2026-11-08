@@ -1,5 +1,7 @@
 #include "star_rank.hpp"
 #include "wide_suffix_array.hpp"
+#include "compact_suffix_array.hpp"
+#include <type_traits>
 
 #include <algorithm>
 #include <stdexcept>
@@ -31,7 +33,8 @@ bool sameStarSuffix(std::span<const std::uint8_t> sequence,
     std::uint64_t i = 0;
     bool terminated = false;
     for (; i < suffix_length_max; ++i) {
-        if (left+i >= sequence.size() || right+i >= sequence.size()) break;
+        // left <= right, so the right boundary also bounds the left access.
+        if (right+i >= sequence.size()) break;
         const auto a = sequence[left+i], b = sequence[right+i];
         if (a != b) break;
         if (a == 6) { terminated = true; break; }
@@ -64,6 +67,8 @@ void normalize(std::span<Position> suffixes,
     std::uint64_t synthetic_length, std::uint32_t suffix_length_max, int runThreadN = 0) {
     if (suffix_length_max == 0) throw std::invalid_argument("empty STAR suffix comparison");
     std::vector<std::uint8_t> equal;
+    std::vector<std::uint64_t> equal_bits;
+    constexpr bool compact=std::is_same_v<Position,detail::Position40>;
     if (suffixes.size() >= (1ULL << 20)) {
         // STAR equality ends at padding. Equal terminated suffixes necessarily
         // have equal distances to padding, hence equal distances modulo 256.
@@ -77,20 +82,36 @@ void normalize(std::span<Position> suffixes,
             distance[i] = static_cast<std::uint8_t>(run);
         }
         const bool filter = longest < suffix_length_max;
-        equal.resize(suffixes.size(), 0);
+        if constexpr(compact) equal_bits.resize((suffixes.size()+63)/64,0);
+        else equal.resize(suffixes.size(), 0);
         const auto threads = detail::suffixConstructionThreads(sequence.size(), runThreadN);
 #if defined(_OPENMP)
         #pragma omp parallel num_threads(threads)
 #endif
         {
             ComparisonCache cache;
+            if constexpr(compact) {
 #if defined(_OPENMP)
-            #pragma omp for schedule(static)
+                #pragma omp for schedule(static)
 #endif
-            for (std::int64_t i = 1; i < static_cast<std::int64_t>(suffixes.size()); ++i) {
-                const auto left = suffixes[i-1], right = suffixes[i];
-                equal[i] = (!filter || distance[left] == distance[right]) &&
-                    sameStarSuffix(sequence, left, right, suffix_length_max, &cache);
+                for(std::size_t word=0;word<equal_bits.size();++word) {
+                    std::uint64_t bits=0;
+                    for(auto i=std::max<std::size_t>(1,word*64);i<std::min(suffixes.size(),(word+1)*64);++i) {
+                        const std::uint64_t left=suffixes[i-1],right=suffixes[i];
+                        if((!filter||distance[left]==distance[right])&&sameStarSuffix(sequence,left,right,suffix_length_max,&cache))
+                            bits|=std::uint64_t{1}<<(i%64);
+                    }
+                    equal_bits[word]=bits;
+                }
+            } else {
+#if defined(_OPENMP)
+                #pragma omp for schedule(static)
+#endif
+                for (std::int64_t i = 1; i < static_cast<std::int64_t>(suffixes.size()); ++i) {
+                    const auto left = suffixes[i-1], right = suffixes[i];
+                    equal[i] = (!filter || distance[left] == distance[right]) &&
+                        sameStarSuffix(sequence, left, right, suffix_length_max, &cache);
+                }
             }
         }
         (void)threads;
@@ -98,8 +119,8 @@ void normalize(std::span<Position> suffixes,
     for (std::size_t first = 0; first < suffixes.size();) {
         auto last = first+1;
         while (last < suffixes.size() &&
-               (equal.empty() ? sameStarSuffix(sequence, suffixes[last-1], suffixes[last], suffix_length_max)
-                              : equal[last] != 0))
+               ((equal.empty() && equal_bits.empty()) ? sameStarSuffix(sequence, suffixes[last-1], suffixes[last], suffix_length_max)
+                              : compact ? ((equal_bits[last/64]>>(last%64))&1)!=0 : equal[last] != 0))
             ++last;
         if (last-first > 1)
             std::sort(suffixes.begin()+first, suffixes.begin()+last,
@@ -123,6 +144,12 @@ void detail::normalizeStarSuffixRanks64(std::span<std::uint64_t> suffixes,
     std::span<const std::uint8_t> sequence, std::uint64_t real_length,
     std::uint64_t synthetic_length, std::uint32_t suffix_length_max, int runThreadN) {
     normalize(suffixes, sequence, real_length, synthetic_length, suffix_length_max, runThreadN);
+}
+
+void detail::normalizeStarSuffixRanks40(std::span<Position40> suffixes,
+    std::span<const std::uint8_t> sequence, std::uint64_t real_length,
+    std::uint64_t synthetic_length, std::uint32_t suffix_length_max, int runThreadN) {
+    normalize(suffixes,sequence,real_length,synthetic_length,suffix_length_max,runThreadN);
 }
 
 } // namespace nustar::star2711b

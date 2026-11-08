@@ -1,6 +1,6 @@
 #include "suffix_array_index.hpp"
-#include "sais.hpp"
 #include "wide_suffix_array.hpp"
+#include "compact_suffix_array.hpp"
 #include "../reference/genome.hpp"
 #include "../common/binary.hpp"
 #include "../common/file_identity.hpp"
@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #endif
 
@@ -89,6 +90,9 @@ Failure indexError(ErrorKind kind, std::string message) {
 struct BuildParameters {
     std::uint32_t prefix_bases = 10;
     int runThreadN = 0;
+    std::string algorithm="libsais64";
+    bool explicit_algorithm=false;
+    bool profile=false;
 };
 constexpr std::uint32_t star_suffix_length_max =
     std::numeric_limits<std::uint32_t>::max();
@@ -104,11 +108,17 @@ Result<BuildParameters> buildParameters(const BackendOptions& options) {
         if (option.resolved_tokens.size() != 1)
             return indexError(ErrorKind::Config, "invalid suffix array option: " + option.name);
         const auto& token = option.resolved_tokens[0];
+        if(option.name=="genomeSAalgorithm") {
+            if(token!="libsais64" && token!="libsais40")
+                return indexError(ErrorKind::Config,"unknown genomeSAalgorithm: "+token);
+            parameters.algorithm=token;parameters.explicit_algorithm=true;continue;
+        }
         std::uint32_t value = 0;
         const auto [end, error] = std::from_chars(token.data(), token.data()+token.size(), value);
         if (error != std::errc{} || end != token.data()+token.size() || value == 0)
             return indexError(ErrorKind::Config, "invalid suffix array option: " + option.name);
-        if (option.name == "genomeSAindexNbases" && value <= 15)
+        if(option.name=="profileGenomeGenerate" && value==1) parameters.profile=true;
+        else if (option.name == "genomeSAindexNbases" && value <= 15)
             parameters.prefix_bases = value;
         else if (option.name == "runThreadN" && value <= 256)
             parameters.runThreadN = static_cast<int>(value);
@@ -250,8 +260,8 @@ SearchIndexCapabilities SuffixArrayIndex::capabilities() const {
 }
 
 SuffixArrayIndexBackend::SuffixArrayIndexBackend(SuffixArrayBuilderLease builder)
-    : builder_(builder ? std::move(builder) : std::make_shared<SaisSuffixArrayBuilder>()) {
-    if (builder_->algorithmId().empty())
+    : builder_(std::move(builder)) {
+    if (builder_ && builder_->algorithmId().empty())
         throw std::invalid_argument("suffix array builder needs an algorithm ID");
 }
 
@@ -265,31 +275,71 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
     if (std::holds_alternative<Failure>(option_result))
         return std::get<Failure>(std::move(option_result));
     const auto options = std::get<BuildParameters>(option_result);
+    const bool builtin=!builder_;
+    if(!builtin && options.explicit_algorithm)
+        return indexError(ErrorKind::Config,"genomeSAalgorithm conflicts with a custom suffix builder");
+    const std::string algorithm_id=builtin && options.algorithm=="libsais40" ? "libsais40-v1-2.12.1" :
+        builtin && options.algorithm=="libsais64" ? "libsais64-2.12.1" : std::string(builderId());
+    auto stage_started=std::chrono::steady_clock::now();
+    auto mark=[&](const char* stage) {
+        const auto now=std::chrono::steady_clock::now();
+        if(options.profile) {
+            std::cerr << "IndexBuild stage=" << stage << " seconds="
+                << std::chrono::duration<double>(now-stage_started).count();
+#if defined(__unix__)
+            rusage usage{};
+            if(::getrusage(RUSAGE_SELF,&usage)==0)std::cerr << " peak_rss_kib=" << usage.ru_maxrss;
+#endif
+            std::cerr << '\n';
+        }
+        stage_started=now;
+    };
     std::vector<std::uint8_t> sequence;
     PackedSuffixArray packed;
     std::vector<PrefixRange> prefixes;
     try {
         sequence = makeStarPhysicalSequence(*concrete, 1);
-        auto finish = [&]<class Position>(std::vector<Position> all) {
+        mark("physical-sequence");
+        auto finish = [&]<class Array>(Array all) {
+            using Position=typename Array::value_type;
+            mark("suffix-sort");
             if (all.size() != sequence.size()+1)
                 throw std::runtime_error("suffix array builder returned the wrong length");
             std::size_t kept = 0;
-            for (const auto position : all)
-                if (position < sequence.size() && sequence[position] >= 1 && sequence[position] <= 4)
-                    all[kept++] = position;
+            if constexpr (sizeof(Position) == 5) {
+                // Built-in compact backends return this owning array: the empty
+                // suffix is first, and every remaining position is inside text.
+                if (std::uint64_t(all[0]) != sequence.size())
+                    throw std::runtime_error("compact backend returned an invalid empty suffix");
+                for (std::size_t i=1;i<all.size();++i) {
+                    const std::uint64_t position=all[i];
+                    if (sequence[position] <= 4) all[kept++] = position;
+                }
+            } else {
+                for (const auto position : all)
+                    if (position < sequence.size() && sequence[position] <= 4)
+                        all[kept++] = position;
+            }
             all.resize(kept);
-            if constexpr (sizeof(Position) == 8)
+            if constexpr (sizeof(Position) == 5)
+                detail::normalizeStarSuffixRanks40(all.slots(),sequence,concrete->storage().forward.size(),
+                    concrete->synthetic().size(),star_suffix_length_max,options.runThreadN);
+            else if constexpr (sizeof(Position) == 8)
                 detail::normalizeStarSuffixRanks64(all, sequence, concrete->storage().forward.size(),
                     concrete->synthetic().size(), star_suffix_length_max, options.runThreadN);
             else
                 normalizeStarSuffixRanks(all, sequence, concrete->storage().forward.size(),
                     concrete->synthetic().size(), star_suffix_length_max);
-            if constexpr (sizeof(Position) == 8)
+            mark("filter-and-normalize");
+            if constexpr (sizeof(Position) == 8 || sizeof(Position) == 5)
                 packed = PackedSuffixArray::packAndRelease(std::move(all), sequence.size());
             else
                 packed = PackedSuffixArray(all, sequence.size());
+            mark("pack");
         };
-        if (dynamic_cast<const SaisSuffixArrayBuilder*>(builder_.get()))
+        if (builtin && options.algorithm=="libsais40")
+            finish(detail::buildSuffixArrayLibsais40(sequence,options.runThreadN));
+        else if (builtin && options.algorithm=="libsais64")
             finish(detail::buildSuffixArraySais64(sequence, options.runThreadN));
         else {
             // Keep existing caller-supplied 32-bit builder implementations ABI/source-compatible.
@@ -298,11 +348,12 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
             finish(builder_->build(sequence));
         }
         prefixes = buildPrefixes(sequence, packed, options.prefix_bases, options.runThreadN);
+        mark("prefix-ranges");
     } catch (const std::exception& error) {
         return indexError(ErrorKind::Capacity, error.what());
     }
     auto identity = SearchIndexIdentity{"nustar-sa", "nustar-sa-v4", 4, "",
-        std::string(concrete->semanticId()), optionsHash(options, builderId(), 4),
+        std::string(concrete->semanticId()), optionsHash(options, algorithm_id, 4),
         IndexGeneration{next_index_generation.fetch_add(1)}};
     std::error_code ec;
     if (!request.artifact.parent_path().empty())
@@ -311,9 +362,10 @@ Result<SearchIndexLease> SuffixArrayIndexBackend::build(const SearchIndexRequest
     const auto physical_length=sequence.size();
     std::vector<std::uint8_t>().swap(sequence);
     auto index = std::make_shared<SuffixArrayIndex>(identity, reference, request.artifact,
-        std::string(builderId()), options.prefix_bases, star_suffix_length_max,
+        algorithm_id, options.prefix_bases, star_suffix_length_max,
         physical_length, std::move(packed), std::move(prefixes));
-    try { writeIndex(request.artifact, *index); }
+    mark("native-prefix");
+    try { writeIndex(request.artifact, *index);mark("write"); }
     catch (const std::exception& error) { return indexError(ErrorKind::Io, error.what()); }
     auto file = identifyFile(request.artifact);
     if (std::holds_alternative<Failure>(file)) return std::get<Failure>(std::move(file));

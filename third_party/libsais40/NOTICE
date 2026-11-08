@@ -1,0 +1,25 @@
+NuSTAR libsais40-v1
+
+Derived from libsais 2.12.1 by Ilya Grebnov, copyright 2021-2026.
+Upstream: https://github.com/IlyaGrebnov/libsais/tree/v2.12.1
+License: Apache-2.0 WITH LLVM-exception; see LICENSE.
+The exact source/archive hashes are recorded in ../libsais/libsais_upstream.json.
+
+NuSTAR changes:
+- Five-byte signed array slots with native-width scalar arithmetic and fixed caches.
+- Explicit logical 40-bit casts and two marker bits; input bound below 2^38-1.
+- Slot-based views for scratch records, and slot-relative bucket placement.
+- Workspace-preserving, alignment-aware 40/32-bit recursive conversion.
+- Native SIMD kernels that assume eight-byte entries disabled in the compact path.
+- Only suffix-array construction is exported; unused kernels are removed.
+- Final NuSTAR packed SA reuses the original allocation (see index/packed_suffix_array.cpp).
+
+regenerate.py deterministically derives libsais40.inc from the pinned vendored
+libsais64.c. It refuses a changed upstream hash. Regeneration does not download
+code. slot.hpp and native_recursion.hpp are the maintained storage adapters.
+
+Memory scope: the main SA and reduced text share five-byte storage. As in
+libsais, recursive alphabet buckets can use extra storage when workspace is
+insufficient: five-byte entries in the compact recursion or four-byte entries
+inside native libsais_int. This is not a claim of 5N plus O(1) total scratch.
+No full-length 64-bit SA, ISA, or recursive text is allocated by this backend.

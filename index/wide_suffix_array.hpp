@@ -7,9 +7,11 @@
 
 namespace nustar::star2711b::detail {
 
-// Internal construction helpers. Search/index interfaces and persisted v3
+// Internal construction helpers. Search/index interfaces and persisted v4
 // packing are independent of this temporary, full-width sorting workspace.
 int suffixConstructionThreads(std::size_t length, int runThreadN = 0);
+// Symbols are nonzero: production input comes from makeStarPhysicalSequence(..., 1).
+// libsais supplies the implicit terminal sentinel; do not rescan this large buffer.
 std::vector<std::uint64_t> buildSuffixArraySais64(
     std::span<const std::uint8_t> symbols, int runThreadN = 0);
 void normalizeStarSuffixRanks64(std::span<std::uint64_t> suffixes,

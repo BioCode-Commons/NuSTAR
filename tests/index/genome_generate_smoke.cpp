@@ -173,6 +173,25 @@ int main() {
                 index->suffixArray().size()*sizeof(std::uint32_t) ||
             !std::ranges::equal(index->suffixArray(), built_index->suffixArray()))
             throw std::runtime_error("packed SA reload or compression differs");
+        for(const auto algorithm:{"libsais64","libsais40"}) {
+            auto selected=request;selected.artifact=directory/(std::string(algorithm)+".sa");
+            selected.options.values.push_back(OptionProvenance{"genomeSAalgorithm",{},{algorithm},"test"});
+            auto other=std::dynamic_pointer_cast<const SuffixArrayIndex>(checked(backend.build(selected,annotated.lease)));
+            auto cross=selected;cross.options.values.back().resolved_tokens={"libsais64"};
+            auto reloaded=std::dynamic_pointer_cast<const SuffixArrayIndex>(checked(backend.load(cross,loaded_reference.lease)));
+            if(!std::ranges::equal(index->suffixArray(),other->suffixArray()) ||
+               !std::ranges::equal(index->suffixArray(),reloaded->suffixArray()) ||
+               !std::ranges::equal(index->prefixIndex().bytes(),other->prefixIndex().bytes()))
+                throw std::runtime_error("selected SA backend changed index content");
+        }
+        if (backend.builderId()!="libsais64-2.12.1")
+            throw std::runtime_error("default builder provenance differs");
+        for (const auto algorithm:{"unknown","sais32","psacak40"}) {
+            auto unknown=request;
+            unknown.options.values.push_back(OptionProvenance{"genomeSAalgorithm",{},{algorithm},"test"});
+            if(!std::holds_alternative<Failure>(backend.build(unknown,annotated.lease)))
+                throw std::runtime_error("unsupported SA backend accepted");
+        }
         // The sidecar is optional build provenance, never a load-time check.
         {
             std::ofstream bad_checksum(request.artifact.string()+".sha256");

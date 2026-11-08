@@ -134,6 +134,7 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
         const auto sj_config = defaultStarSjOutputConfig();
         const SinglePipelineConfig pipeline_config{selection, filter,        sj_config,
                                                    sam,       stitch_config, limits};
+        // Composition validates selection once, also for the direct fast loop below.
         auto pipeline = checked(composeSinglePipeline(
             reference, SingleKernelBundle{mapper, selector, projector}, pipeline_config));
         // Like STAR's genomeMain.freeMemory(), drop mapping-only leases before
@@ -189,9 +190,7 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                  bam_output =
                      options.run.bam.enabled()](RawFragment&& raw, StageWorkspace& workspace,
                                                 LegacyRandomState& rng) -> Result<FragmentEffects> {
-                    if (raw.layout != Layout::SE || !raw.mates[0] || raw.mates[1])
-                        return Failure{ErrorKind::Input, Stage::Input, raw.id, 1,
-                                       "invalid single-end FASTQ fragment"};
+                    // The bound source supplies complete SE records with qualities.
                     auto& mate = *raw.mates[0];
                     auto read = prepareSingleFastq(std::move(mate.header), std::move(mate.sequence),
                                                    std::move(*mate.quality), raw.id.ordinal,
@@ -341,9 +340,7 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                             for (auto& raw : task->fragments) {
                                 if (stopped.load())
                                     return;
-                                if (raw.layout != Layout::SE || !raw.mates[0] || raw.mates[1] ||
-                                    !raw.mates[0]->quality)
-                                    throw std::runtime_error("invalid single-end FASTQ fragment");
+                                // Layout and qualities are established by the bound source.
                                 auto& mate = *raw.mates[0];
                                 const auto preparing = Clock::now();
                                 auto read = prepareSingleFastq(

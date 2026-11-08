@@ -81,6 +81,33 @@ int main() {
             } catch (const std::invalid_argument&) {}
         }
         const std::uint64_t human_physical = 6'200'000'000ULL;
+        // In-place conversion must retain its original base address, overwrite
+        // nonzero input correctly, preserve guards and survive owner copies.
+        for (unsigned width : {1,7,8,9,31,32,33,34,35,39,40}) {
+            const auto domain=std::uint64_t{1}<<width;
+            for (std::size_t n : {0U,1U,2U,7U,63U,64U,65U,4095U,4096U,4097U,20001U}) {
+                nustar::star2711b::detail::CompactSuffixArray source(n+1000);
+                std::vector<std::uint64_t> expected(n);
+                for (std::size_t i=0;i<source.size();++i) source[i]=nustar::star2711b::detail::Position40::mask;
+                for (std::size_t i=0;i<n;++i) source[i]=expected[i]=(i*4294967291ULL+12345)%domain;
+                source.resize(n);
+                auto* original=reinterpret_cast<const std::uint8_t*>(source.begin());
+                auto packed=PackedSuffixArray::packAndRelease(std::move(source),domain);
+                if (packed.packedBytes().data()!=original || source.size()!=0)
+                    throw std::runtime_error("compact packing did not transfer its allocation");
+                if (!std::ranges::equal(packed,expected))
+                    throw std::runtime_error("in-place packing overwrote unread positions");
+                PackedSuffixArray reference(expected,domain);
+                if (!std::ranges::equal(packed.packedBytes(),reference.packedBytes()))
+                    throw std::runtime_error("in-place packed bytes or padding differ");
+                for (unsigned j=0;j<7;++j) if (original[packed.packedBytes().size()+j])
+                    throw std::runtime_error("in-place reader guards are not zero");
+                auto copy=packed;
+                packed=PackedSuffixArray{};
+                if (!std::ranges::equal(copy,expected))
+                    throw std::runtime_error("in-place packed owner lifetime failed");
+            }
+        }
         {
             // Cross the source-page release boundary, with values above 32 bits.
             std::vector<std::uint64_t> source((1U<<20)+257);

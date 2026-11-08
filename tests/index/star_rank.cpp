@@ -9,6 +9,20 @@
 #include <vector>
 
 int main() {
+    // Unterminated suffixes must stop at the physical end even when the
+    // comparison limit is longer than the remaining text. Reversed coordinates
+    // exercise the left/right swap before the single boundary check.
+    for (const std::vector<std::uint8_t> edge : {
+            std::vector<std::uint8_t>{1,1,1}, {1,1,1,6}}) {
+        for (const std::uint32_t limit : {1u,UINT32_MAX}) {
+            auto actual=nustar::star2711b::detail::buildSuffixArraySais64(edge);
+            std::erase_if(actual,[&](auto p){return p==edge.size() || edge[p]==6;});
+            auto expected=actual;
+            if(limit==1 || edge.back()==6)std::sort(expected.begin(),expected.end());
+            nustar::star2711b::detail::normalizeStarSuffixRanks64(actual,edge,edge.size(),0,limit);
+            if(actual!=expected){std::cerr<<"STAR physical-end rank mismatch\n";return 1;}
+        }
+    }
     // Long exact repeats and long common prefixes ending in a mismatch. The
     // oracle sorts explicit terminated strings, independently of SA/LCP logic.
     constexpr std::size_t block = 4096, copies = 300;

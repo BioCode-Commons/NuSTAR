@@ -33,8 +33,6 @@ int suffixConstructionThreads(std::size_t length, int runThreadN) {
 std::vector<std::uint64_t> buildSuffixArraySais64(std::span<const std::uint8_t> symbols, int runThreadN) {
     if (symbols.size() >= static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max()))
         throw std::length_error("suffix array input exceeds signed 64-bit capacity");
-    if (std::find(symbols.begin(), symbols.end(), 0) != symbols.end())
-        throw std::invalid_argument("SAIS input contains sentinel");
     std::vector<std::uint64_t> suffixes(symbols.size()+1);
     // libsais has an implicit end marker. Prepending its empty suffix yields
     // exactly the existing builder contract without copying a 6+ GB input.

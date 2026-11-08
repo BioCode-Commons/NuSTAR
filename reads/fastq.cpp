@@ -157,9 +157,9 @@ private:
         if (!lines.line(mate.header)) return false;
         std::string plus;
         std::string quality;
+        // STAR consumes the third line without validating its contents.
         if (!lines.line(mate.sequence) || !lines.line(plus) || !lines.line(quality) ||
             mate.header.empty() || mate.header.front() != '@' ||
-            plus.empty() || plus.front() != '+' ||
             mate.sequence.size() != quality.size())
             throw std::runtime_error("invalid FASTQ record");
         mate.quality = std::move(quality);

@@ -1,6 +1,7 @@
 #include "packed_suffix_array.hpp"
 
 #include <bit>
+#include <array>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -168,6 +169,30 @@ PackedSuffixArray PackedSuffixArray::packAndRelease(std::vector<std::uint64_t> v
 #endif
     }
     return result;
+}
+
+PackedSuffixArray PackedSuffixArray::packAndRelease(detail::CompactSuffixArray values,
+    std::uint64_t physical_length) {
+    const auto count=values.size();
+    const auto width=widthFor(physical_length);
+    if (width>40) throw std::invalid_argument("in-place packing exceeds the source slot width");
+    const auto payload=requiredBytes(count,width);
+    auto* bytes=reinterpret_cast<std::uint8_t*>(values.begin());
+    // Read a bounded block before overwriting it. Completed output words never
+    // extend past the consumed input prefix because width <= 40. The writer
+    // overwrites bytes rather than OR-ing into the nonzero construction array.
+    std::array<std::uint64_t,4096> block;
+    RangeWriter writer(bytes,width);
+    for (std::size_t first=0;first<count;) {
+        const auto length=std::min(block.size(),count-first);
+        for (std::size_t i=0;i<length;++i) block[i]=values[first+i];
+        for (std::size_t i=0;i<length;++i) writer.put(block[i]);
+        first+=length;
+    }
+    writer.finish();
+    std::memset(bytes+payload,0,7);
+    auto owner=values.takePackedStorage(payload+7);
+    return fromView(width,count,{bytes,payload+7},std::move(owner));
 }
 
 PackedSuffixArray PackedSuffixArray::fromBytes(std::uint8_t width,

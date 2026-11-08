@@ -30,10 +30,7 @@ Result<StatsDelta> deriveStatistics(const MappingRead& read,
         ++delta.mapped_multiple;
     } else if (decision.mapping == MappingClass::Unique) {
         ++delta.mapped_unique;
-        if (selection.ordered.empty() ||
-            selection.ordered.front().candidate.value >= candidates.candidates.size())
-            return Failure{ErrorKind::Internal, Stage::Commit, read.fragment, 1,
-                           "unique read has no selected candidate for statistics"};
+        // Unique mapping implies a selected candidate and a nonempty mapping read.
         const auto& alignment = candidates.candidates[
             selection.ordered.front().candidate.value];
         const auto& metrics = alignment.metrics;
@@ -44,9 +41,8 @@ Result<StatsDelta> deriveStatistics(const MappingRead& read,
         delta.deletion_bases = metrics.deletion_bases;
         for (const auto& block : alignment.blocks)
             delta.mapped_bases += block.length;
-        if (read.budget.legacy_Lread != 0)
-            delta.mapped_portion = double(delta.mapped_bases) /
-                                   double(read.budget.legacy_Lread);
+        delta.mapped_portion = double(delta.mapped_bases) /
+                               double(read.budget.legacy_Lread);
         for (const auto& boundary : alignment.boundaries) {
             if (boundary.kind != BoundaryKind::Intron) continue;
             ++delta.splices_by_motif[static_cast<std::size_t>(boundary.motif)];

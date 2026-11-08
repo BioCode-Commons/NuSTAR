@@ -121,6 +121,9 @@ Result<std::shared_ptr<const ISingleReadPipeline>> composeSinglePipeline(
         return pipelineError("single pipeline needs reference, mapper, selection and SAM kernels");
     if (!reference->view().metadata || !reference->view().sequence)
         return pipelineError("single pipeline needs a complete reference view");
+    if (auto status = bundle.selection->validateConfig(config.select);
+        std::holds_alternative<Failure>(status))
+        return std::get<Failure>(std::move(status));
     return std::shared_ptr<const ISingleReadPipeline>(
         std::make_shared<SingleReadPipeline>(std::move(reference),
                                              std::move(bundle), config));

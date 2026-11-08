@@ -145,6 +145,9 @@ Result<std::shared_ptr<const IPairedReadPipeline>> composePairedPipeline(
     if (config.overlap.peOverlapNbasesMin != 0 &&
         (!bundle.overlap || !bundle.merged_single_mapper))
         return pipelineError("paired overlap needs refiner and merged-read mapper");
+    if (auto status = bundle.selection->validateConfig(config.select);
+        std::holds_alternative<Failure>(status))
+        return std::get<Failure>(std::move(status));
     return std::shared_ptr<const IPairedReadPipeline>(
         std::make_shared<PairedReadPipeline>(std::move(reference),
                                              std::move(bundle), config));

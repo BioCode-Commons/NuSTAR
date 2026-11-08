@@ -51,16 +51,11 @@ Result<FragmentJunctions> collectJunctions(const MappingRead& read,
         return out;
     std::map<Key, std::size_t> seen;
     for (const auto& chosen : selected.ordered) {
-        if (chosen.candidate.value >= candidates.candidates.size())
-            return sjError(ErrorKind::Input, "selected candidate missing for SJ",
-                           read.fragment);
+        // Selection IDs refer to this candidate set; boundaries join adjacent blocks.
         const auto& candidate = candidates.candidates[chosen.candidate.value];
         for (std::size_t i = 0; i < candidate.boundaries.size(); ++i) {
             const auto& boundary = candidate.boundaries[i];
             if (boundary.kind != BoundaryKind::Intron) continue;
-            if (i+1 >= candidate.blocks.size())
-                return sjError(ErrorKind::Input, "SJ boundary lacks adjacent blocks",
-                               read.fragment);
             const auto& left = candidate.blocks[i];
             const auto& right = candidate.blocks[i+1];
             const auto start = left.genome_start.value+left.length;
@@ -99,28 +94,21 @@ struct JunctionAccumulator::Impl {
     std::uint32_t worker;
     SjOutputConfig config;
     std::vector<JunctionObservation> observations;
-    bool finished = false;
 };
 
 JunctionAccumulator::JunctionAccumulator(std::uint32_t worker,
     const SjOutputConfig& config)
-    : impl_(std::make_unique<Impl>(Impl{worker, config, {}, false})) {}
+    : impl_(std::make_unique<Impl>(Impl{worker, config, {}})) {}
 
 JunctionAccumulator::~JunctionAccumulator() = default;
 
 Status JunctionAccumulator::add(const FragmentJunctions& fragment) {
-    if (impl_->finished)
-        return sjError(ErrorKind::Input, "SJ accumulator already finished",
-                       fragment.fragment);
     impl_->observations.insert(impl_->observations.end(),
         fragment.ordered.begin(), fragment.ordered.end());
     return std::monostate{};
 }
 
 Result<WorkerJunctions> JunctionAccumulator::finish() {
-    if (impl_->finished)
-        return sjError(ErrorKind::Input, "SJ accumulator already finished");
-    impl_->finished = true;
     std::map<Key, JunctionAggregate> collapsed;
     for (const auto& observation : impl_->observations) {
         const auto key = keyOf(observation.key);

@@ -1,4 +1,5 @@
 #pragma once
+#include "compact_suffix_array.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -69,8 +70,11 @@ public:
     // calloc keeps untouched large pages uncommitted. Used by the streaming
     // junction merge, where an eagerly cleared second SA doubles peak RSS.
     static PackedSuffixArray lazyZeroed(std::size_t count,std::uint8_t width);
-    // Consume construction-only positions. On Linux, return fully consumed
-    // source pages while filling the packed array, instead of retaining both.
+    // Pack five-byte construction positions in place and transfer their mapping;
+    // unused tail pages are unmapped on Unix. No second full SA is allocated.
+    static PackedSuffixArray packAndRelease(detail::CompactSuffixArray values,
+        std::uint64_t physical_length);
+    // The original full-width path streams to separate lazily allocated storage.
     static PackedSuffixArray packAndRelease(std::vector<std::uint64_t> values,
                                              std::uint64_t physical_length);
     // Advisory only: immutable file contents remain readable after discard.

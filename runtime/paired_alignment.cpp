@@ -174,9 +174,7 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
              bam_output =
                  options.run.bam.enabled()](RawFragment&& raw, StageWorkspace& workspace,
                                             LegacyRandomState& rng) -> Result<FragmentEffects> {
-                if (raw.layout != Layout::PE || !raw.mates[0] || !raw.mates[1])
-                    return Failure{ErrorKind::Input, Stage::Input, raw.id, 1,
-                                   "invalid paired FASTQ fragment"};
+                // The bound source supplies complete PE records with qualities.
                 auto& first = *raw.mates[0];
                 auto& second = *raw.mates[1];
                 auto read = preparePairedFastq(

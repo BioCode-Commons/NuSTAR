@@ -14,18 +14,21 @@ Failure selectionError(ErrorKind kind, std::string message,
 
 class StarAlignmentSelector final : public IAlignmentSelector {
 public:
-    Status select(const MappingRead& read, const CandidateSet& candidates,
-                  const SelectionConfig& config, LegacyRandomState& random,
-                  SelectionResult& out) const override {
-        out = SelectionResult{};
-        if (candidates.windows.empty() || !candidates.best) return std::monostate{};
+    Status validateConfig(const SelectionConfig& config) const override {
         if (config.outFilterMultimapNmax == 0 ||
             (config.outMultimapperOrder != "Old_2.4" &&
              config.outMultimapperOrder != "Random") ||
             (config.outSAMprimaryFlag != "OneBestScore" &&
              config.outSAMprimaryFlag != "AllBestScore"))
-            return selectionError(ErrorKind::Config, "unsupported STAR selection state",
-                                  read.fragment);
+            return selectionError(ErrorKind::Config, "unsupported STAR selection state");
+        return std::monostate{};
+    }
+
+    Status select(const MappingRead& read, const CandidateSet& candidates,
+                  const SelectionConfig& config, LegacyRandomState& random,
+                  SelectionResult& out) const override {
+        out = SelectionResult{};
+        if (candidates.windows.empty() || !candidates.best) return std::monostate{};
         const auto best_score = candidates.candidates[candidates.best->value].metrics.score;
         out.best = candidates.best;
         out.best_score = best_score;
