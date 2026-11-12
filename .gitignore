@@ -1,5 +1,8 @@
 # Build directories
 build/
+
+tests/
+tools/
 # Hidden files and directories
 .*
 

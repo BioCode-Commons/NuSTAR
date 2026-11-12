@@ -11,6 +11,7 @@ struct Reader {
     std::vector<std::string> sq;
     std::string pending, name;
     unsigned long long records = 0;
+    unsigned long long normalized_tlen_zeros = 0;
     bool ready = false;
     explicit Reader(const char* path) : input(path) {
         if (!input) throw std::runtime_error("cannot open SAM");
@@ -35,6 +36,12 @@ struct Reader {
             }
             if (fields.size() < 11 || fields[0].empty()) throw std::runtime_error("invalid SAM record");
             name = fields[0];
+            // STAR can print a separately emitted minus sign followed by zero.
+            // Only normalize TLEN's signed zero; retain every other field exactly.
+            if (fields[8] == "-0") {
+                fields[8] = "0";
+                ++normalized_tlen_zeros;
+            }
             std::sort(fields.begin()+11, fields.end());
             pending.clear();
             for (size_t i=0; i<fields.size(); ++i) {
@@ -66,7 +73,7 @@ int main(int argc, char** argv) {
             auto emit = [](const std::string& value) {
                 std::cout << value.size() << ':' << value;
             };
-            std::cout << "SAM-canonical-v1\n";
+            std::cout << "SAM-canonical-v2-tlen-zero\n";
             for (const auto& sq : reader.sq) emit(sq);
             std::cout << "\nBODY\n";
             unsigned long long groups = 0;
@@ -79,7 +86,8 @@ int main(int argc, char** argv) {
             }
             std::cout.flush();
             if (!std::cout) throw std::runtime_error("canonical stream write error");
-            std::cerr << "{\"records\":" << reader.records << ",\"groups\":" << groups << "}\n";
+            std::cerr << "{\"records\":" << reader.records << ",\"groups\":" << groups
+                      << ",\"normalized_tlen_zeros\":" << reader.normalized_tlen_zeros << "}\n";
             return 0;
         } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 2; }
     }
@@ -102,11 +110,16 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        diff.flush();
+        if (!diff) throw std::runtime_error("difference log write error");
         const bool sq_equal=left.sq==right.sq;
         std::cout << "{\"equal\":" << (different==0 && sq_equal ? "true":"false")
                   << ",\"left_records\":" << left.records << ",\"right_records\":" << right.records
                   << ",\"groups\":" << groups << ",\"different_groups\":" << different
-                  << ",\"sq_equal\":" << (sq_equal?"true":"false") << "}\n";
+                  << ",\"sq_equal\":" << (sq_equal?"true":"false")
+                  << ",\"left_normalized_tlen_zeros\":" << left.normalized_tlen_zeros
+                  << ",\"right_normalized_tlen_zeros\":" << right.normalized_tlen_zeros
+                  << ",\"comparison_schema\":\"SAM-fields-v2-tlen-zero\"}\n";
         return different==0 && sq_equal ? 0:1;
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 2; }
 }
