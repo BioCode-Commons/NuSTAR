@@ -20,12 +20,6 @@ struct OutputBatch {
     BatchId batch;
     std::vector<EncodedFragment> fragments;
 };
-// A backend-owned temporary chunk. It contains no borrowed worker buffers.
-struct StagedOutput {
-    explicit StagedOutput(BatchId id) : batch(id) {}
-    virtual ~StagedOutput() = default;
-    BatchId batch;
-};
 class IOutputSink {
 public:
     virtual ~IOutputSink() = default;
@@ -36,15 +30,9 @@ public:
     virtual Status finalize() { return std::monostate{}; }
     virtual Status begin(std::span<const std::byte> sam_header) = 0;
     virtual Status submit(OutputBatch&&) = 0; // Blocking backpressure is permitted.
-    // Optional STAR-style chunk spooling: stage is thread-safe, while commit
-    // remains serial and ordered. Workers may free all SAM bytes after stage.
-    virtual bool supportsStaging() const noexcept { return false; }
-    virtual Result<std::unique_ptr<StagedOutput>> stage(OutputBatch&&) {
-        return Failure{ErrorKind::Config,Stage::Commit,{},1,"output staging is unsupported"};
-    }
-    virtual Status submitStaged(std::unique_ptr<StagedOutput>) {
-        return Failure{ErrorKind::Config,Stage::Commit,{},1,"output staging is unsupported"};
-    }
+    // Complete batches may reserve disjoint file ranges and write concurrently.
+    // This deliberately does not preserve order between input fragments.
+    virtual bool concurrentWrites() const noexcept { return false; }
     virtual Status finish(std::span<const std::byte> sj_table,
         const WorkerStatistics& run_statistics) = 0;
     virtual void cancel() noexcept = 0;

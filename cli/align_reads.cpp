@@ -20,7 +20,7 @@ int runAlignReads(int argc, char** argv) {
         std::vector<std::string> readFilesIn;
         std::optional<std::filesystem::path> manifest;
         std::uint32_t runThreadN = 1;
-        std::string backend = "mmap", outSAMorder = "Paired";
+        std::string backend = "pread";
         bool within = false, profile = false, runtime_profile = false, bam_paired = false;
         nustar::star2711b::RunControl control;
         auto solo_config = std::make_shared<nustar::star2711b::solo::Config>();
@@ -146,14 +146,13 @@ int runAlignReads(int argc, char** argv) {
                     throw std::invalid_argument("--outSAMunmapped supports None or Within");
                 within = mode == "Within";
             } else if (flag == "--outSAMorder") {
-                outSAMorder = value();
-                if (outSAMorder != "Paired" && outSAMorder != "PairedKeepInputOrder")
+                if (value() != "Paired")
                     throw std::invalid_argument(
-                        "--outSAMorder supports Paired or PairedKeepInputOrder");
+                        "--outSAMorder only supports Paired; input-order output has been removed");
             } else if (flag == "--io-backend") {
                 backend = value();
-                if (backend != "mmap" && backend != "buffered")
-                    throw std::invalid_argument("--io-backend supports mmap or buffered");
+                if (backend != "pread" && backend != "mmap" && backend != "buffered")
+                    throw std::invalid_argument("--io-backend supports pread (mmap and buffered are compatibility aliases)");
             } else if (flag == "--twopassMode") {
                 const auto mode = value();
                 if (mode != "None" && mode != "Basic")
@@ -296,11 +295,11 @@ int runAlignReads(int argc, char** argv) {
             return runAlignSingleSam(SingleSamOptions{genomeDir, readFilesIn[0], sam,
                                                       std::move(command), profile, runThreadN,
                                                       backend, outFileNamePrefix, within,
-                                                      outSAMorder, control},
+                                                      control},
                                      runtime_profile);
         return runAlignPairedSam(PairedSamOptions{genomeDir, readFilesIn[0], readFilesIn[1], sam,
                                                   std::move(command), runThreadN, backend,
-                                                  outFileNamePrefix, within, outSAMorder, control},
+                                                  outFileNamePrefix, within, control},
                                  runtime_profile);
     } catch (const std::exception& error) {
         std::cerr << "alignReads: " << error.what() << '\n';

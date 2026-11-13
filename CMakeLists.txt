@@ -101,7 +101,7 @@ add_library(nustar_paired_pipeline STATIC pipeline/paired_end/pipeline.cpp
 target_link_libraries(nustar_paired_pipeline PUBLIC nustar_paired_mapping nustar_single_mapping
     nustar_selection nustar_sam nustar_sj nustar_stats)
 
-add_library(nustar_parallel STATIC runtime/ordered_alignment.cpp)
+add_library(nustar_parallel STATIC runtime/alignment_scheduler.cpp)
 target_link_libraries(nustar_parallel PUBLIC nustar_input nustar_output
     nustar_sj nustar_stats Threads::Threads)
 add_library(nustar_defaults STATIC runtime/defaults.cpp)

@@ -17,14 +17,12 @@
 #include "bam_output.hpp"
 #include "defaults.hpp"
 #include "input_tags.hpp"
-#include "ordered_alignment.hpp"
+#include "alignment_scheduler.hpp"
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <limits>
-#include <map>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -129,7 +127,6 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
         if (!options.run.output_attributes.empty())
             sam.outSAMattributes = options.run.output_attributes;
         sam.unmapped_within = options.outSAMunmappedWithin;
-        sam.outSAMorder = options.outSAMorder;
         auto projector = makeStarSingleSamProjector();
         const auto sj_config = defaultStarSjOutputConfig();
         const SinglePipelineConfig pipeline_config{selection, filter,        sj_config,
@@ -159,10 +156,9 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
             if (input_spec.groups.empty())
                 input_spec.groups.push_back(InputGroup{{options.reads_fastq, {}}});
             input_spec.capture_aux = options.run.bam_input;
-            const auto& input_backend = options.run.bam_input          ? bamSourceBackend()
-                                        : options.io_backend == "mmap" ? memoryMappedFastqBackend()
-                                                                       : bufferedFastqBackend();
-            if (options.io_backend != "mmap" && options.io_backend != "buffered")
+            const auto& input_backend = options.run.bam_input ? bamSourceBackend()
+                                                        : fastqSourceBackend();
+            if (options.io_backend != "pread" && options.io_backend != "mmap" && options.io_backend != "buffered")
                 throw std::runtime_error("unknown FASTQ IO backend");
             auto rna_source =
                 limitReads(checked(input_backend.open(input_spec)), options.run.read_limit);
@@ -175,7 +171,7 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                                               options.outFileNamePrefix, options.run.sam_enabled},
                                   options.run.bam, metadata, solo_session));
             const auto coarse_started = Clock::now();
-            auto aligned = checked(runOrderedAlignment(
+            auto aligned = checked(runParallelAlignment(
                 *source, *sink, sam_header, sj_config, metadata, options.threads, 1ULL << 20,
                 [pipeline, budget, solo_session]() -> Result<std::unique_ptr<StageWorkspace>> {
                     auto workspace = pipeline->createWorkspace(budget);
@@ -232,12 +228,11 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
         input_spec.groups = options.run.input_groups;
         if (input_spec.groups.empty())
             input_spec.groups.push_back(InputGroup{{options.reads_fastq, {}}});
-        if (options.io_backend != "mmap" && options.io_backend != "buffered")
+        if (options.io_backend != "pread" && options.io_backend != "mmap" && options.io_backend != "buffered")
             throw std::runtime_error("unknown FASTQ IO backend");
         input_spec.capture_aux = options.run.bam_input;
-        const auto& input_backend = options.run.bam_input          ? bamSourceBackend()
-                                    : options.io_backend == "mmap" ? memoryMappedFastqBackend()
-                                                                   : bufferedFastqBackend();
+        const auto& input_backend = options.run.bam_input ? bamSourceBackend()
+                                                        : fastqSourceBackend();
         auto rna_source =
             limitReads(checked(input_backend.open(input_spec)), options.run.read_limit);
         auto source =
@@ -250,35 +245,23 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                               options.run.bam, metadata, solo_session));
         checked(sink->begin(sam_header));
         const auto mapping_wall_started = Clock::now();
-        // Every worker owns its workspaces, RNG and counters. Only input framing
-        // and ordered output/auxiliary reduction are serialized. File chunks
-        // permit compute to continue with at most 2*threads batches in flight.
+        const bool concurrent_output = sink->concurrentWrites();
+        checked(source->prepareParallel(1ULL << 20, options.threads));
+        const bool concurrent_input = source->concurrentReads();
+        std::vector<WorkerAlignmentReduction> reductions(options.threads);
+        // Each worker owns its workspaces, RNG and reductions. Completed
+        // batches submit immediately; only non-concurrent sinks need a lock.
         std::vector<WorkerTiming> timings(options.threads);
-        std::mutex input_mutex, commit_mutex;
-        std::condition_variable committed;
+        std::mutex input_mutex, output_mutex, failure_mutex;
         std::atomic<bool> stopped{false};
         std::string error;
-        std::uint64_t published = 0;
-        std::atomic<std::uint64_t> next_commit{0};
-        bool draining = false;
-        const bool spooling = options.threads > 1 && sink->supportsStaging();
-        struct Pending {
-            OutputBatch output;
-            std::vector<FragmentJunctions> junctions;
-            std::vector<StatsDelta> statistics;
-            std::unique_ptr<StagedOutput> staged;
-        };
-        std::map<std::uint64_t, Pending> ready;
-        JunctionAccumulator junctions(0, sj_config);
-        WorkerStatistics statistics{};
         const auto fail = [&](const std::exception& failure) {
             {
-                std::lock_guard lock(commit_mutex);
+                std::lock_guard lock(failure_mutex);
                 if (error.empty())
                     error = failure.what();
                 stopped.store(true);
             }
-            committed.notify_all();
         };
         std::vector<std::jthread> workers;
         try {
@@ -299,38 +282,25 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                         auto& timing = timings[worker].values;
                         SeedBatch seeds{};
                         WindowBatch windows{};
-                        for (;;) {
+                        while (!stopped.load()) {
                             std::optional<ReadBatch> task;
-                            {
+                            if (concurrent_input) {
+                                const auto reading = Clock::now();
+                                task = checked(source->next(1ULL << 20));
+                                timing.input_read_seconds += elapsed(reading);
+                            } else {
                                 const auto waiting = Clock::now();
                                 std::lock_guard lock(input_mutex);
                                 timing.input_wait_seconds += elapsed(waiting);
                                 if (stopped.load())
                                     break;
-                                if (spooling &&
-                                    published - next_commit.load(std::memory_order_relaxed) >=
-                                        2 * options.threads) {
-                                    const auto queue_waiting = Clock::now();
-                                    std::unique_lock commit_lock(commit_mutex);
-                                    committed.wait(commit_lock, [&] {
-                                        return stopped.load() ||
-                                               published - next_commit < 2 * options.threads;
-                                    });
-                                    timing.commit_wait_seconds += elapsed(queue_waiting);
-                                    if (stopped.load())
-                                        break;
-                                }
                                 const auto reading = Clock::now();
                                 task = checked(source->next(1ULL << 20));
                                 timing.input_read_seconds += elapsed(reading);
-                                if (task) {
-                                    if (task->id.value != published)
-                                        throw std::runtime_error("missing completed batch");
-                                    ++published;
-                                }
                             }
                             if (!task)
                                 break;
+                            const auto previous_records = timing.records;
                             OutputBatch output{task->id, {}};
                             std::vector<FragmentJunctions> batch_junctions;
                             std::vector<StatsDelta> batch_statistics;
@@ -412,63 +382,18 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
                                 timing.records += projected.records.size();
                                 timing.sam_seconds += elapsed(started);
                             }
-                            Pending done{std::move(output),
-                                         std::move(batch_junctions),
-                                         std::move(batch_statistics),
-                                         {}};
-                            if (spooling) {
-                                const auto writing = Clock::now();
-                                done.staged = checked(sink->stage(std::move(done.output)));
-                                timing.sam_seconds += elapsed(writing);
-                            }
-                            const auto waiting = Clock::now();
-                            std::unique_lock lock(commit_mutex);
-                            auto apply = [&](Pending& batch) {
-                                auto started = Clock::now();
-                                for (const auto& fragment : batch.junctions)
-                                    checked(junctions.add(fragment));
-                                timing.selection_seconds += elapsed(started);
-                                started = Clock::now();
-                                for (const auto& delta : batch.statistics)
-                                    addStatistics(statistics.totals, delta);
-                                if (spooling)
-                                    checked(sink->submitStaged(std::move(batch.staged)));
-                                else
-                                    checked(sink->submit(std::move(batch.output)));
-                                timing.sam_seconds += elapsed(started);
-                                ++next_commit;
-                            };
-                            if (spooling) {
-                                timing.commit_wait_seconds += elapsed(waiting);
-                                if (stopped.load())
-                                    break;
-                                ready.emplace(task->id.value, std::move(done));
-                                if (!draining) {
-                                    draining = true;
-                                    while (!stopped.load()) {
-                                        auto next = ready.find(next_commit.load());
-                                        if (next == ready.end())
-                                            break;
-                                        auto batch = std::move(next->second);
-                                        ready.erase(next);
-                                        lock.unlock();
-                                        apply(batch);
-                                        lock.lock();
-                                        committed.notify_all();
-                                    }
-                                    draining = false;
-                                }
+                            const auto writing = Clock::now();
+                            if (concurrent_output) {
+                                checked(sink->submit(std::move(output)));
                             } else {
-                                committed.wait(lock, [&] {
-                                    return stopped.load() || task->id.value == next_commit;
-                                });
+                                const auto waiting = Clock::now();
+                                std::unique_lock lock(output_mutex);
                                 timing.commit_wait_seconds += elapsed(waiting);
-                                if (stopped.load())
-                                    break;
-                                apply(done);
+                                checked(sink->submit(std::move(output)));
                             }
-                            lock.unlock();
-                            committed.notify_all();
+                            reductions[worker].add(task->id, batch_junctions, batch_statistics,
+                                                   timing.records - previous_records);
+                            timing.sam_seconds += elapsed(writing);
                         }
                     } catch (const std::exception& failure) {
                         fail(failure);
@@ -485,11 +410,7 @@ Result<SingleSamReport> runSingleSam(const SingleSamOptions& options) {
             sink->cancel();
             throw std::runtime_error(error);
         }
-        if (next_commit != published)
-            throw std::runtime_error("missing completed batch");
-        const std::array<WorkerJunctions, 1> junction_workers{checked(junctions.finish())};
-        const auto reduced = checked(finalizeJunctions(junction_workers, sj_config));
-        checked(sink->finish(checked(encodeSjTable(reduced, metadata)), statistics));
+        checked(finishConcurrentAlignment(reductions, *sink, sj_config, metadata));
         source.reset();
         release_mapping();
         if (solo_session)

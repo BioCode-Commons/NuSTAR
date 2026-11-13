@@ -54,10 +54,6 @@ void close(Bgzf& file) {
     if (file && bgzf_close(file.release()) != 0)
         throw std::runtime_error("cannot finish BAM output");
 }
-struct Pending final : StagedOutput {
-    OutputBatch output;
-    explicit Pending(OutputBatch&& b) : StagedOutput(b.batch), output(std::move(b)) {}
-};
 class Sink final : public IOutputSink {
     OutputFiles files_;
     BamConfig config_;
@@ -196,13 +192,6 @@ class Sink final : public IOutputSink {
         } catch (const std::exception& e) {
             return Failure{ErrorKind::Io, Stage::Commit, {}, 1, e.what()};
         }
-    }
-    bool supportsStaging() const noexcept override { return true; }
-    Result<std::unique_ptr<StagedOutput>> stage(OutputBatch&& output) override {
-        return std::unique_ptr<StagedOutput>(std::make_unique<Pending>(std::move(output)));
-    }
-    Status submitStaged(std::unique_ptr<StagedOutput> p) override {
-        return submit(std::move(static_cast<Pending&>(*p).output));
     }
     Status submit(OutputBatch&& output) override {
         try {

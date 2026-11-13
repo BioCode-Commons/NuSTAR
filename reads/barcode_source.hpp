@@ -8,6 +8,12 @@ public:
     BarcodeReadSource(std::unique_ptr<IReadSource> reads,std::unique_ptr<IReadSource> barcodes,
                       bool check_barcode_end)
         : reads_(std::move(reads)),barcodes_(std::move(barcodes)),check_barcode_end_(check_barcode_end) {}
+    Status prepareParallel(std::uint64_t bytes, std::uint32_t threads,
+                           std::uint64_t limit = UINT64_MAX) override {
+        // RNA/barcode association remains serial; the RNA reader still needs
+        // its batch size and read limit configured before workers start.
+        return reads_->prepareParallel(bytes, threads, limit);
+    }
     Result<std::optional<ReadBatch>> next(std::uint64_t bytes) override {
         auto result=reads_->next(bytes);
         if(auto failure=std::get_if<Failure>(&result)) return *failure;

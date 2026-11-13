@@ -280,7 +280,7 @@ NuSTAR follows STAR option names and argument forms where implemented. It is a p
 | Input | Plain FASTQ; direct SAM/BAM; SmartSeq manifests | Compressed FASTQ, FASTA reads, comma-separated file groups, `readFilesCommand`, general manifest input outside SmartSeq. |
 | Output | SAM, unsorted/sorted BAM, junction tables, mapping statistics | CRAM as a supported interface, BAI/CSI generation, transcriptome BAM, bulk `GeneCounts`, signal tracks, all STAR header/tag customization. BAM read names are limited to 254 bytes and CIGARs to 65,535 operations. |
 | Solo | Barcode extraction/correction, UMI deduplication, gene/SJ/velocity counting, cell filtering, matrix output, SmartSeq, corrected BAM tags | Full validation of every mode/parameter combination on real single-cell datasets; `Transcript3p` remains less tested. |
-| Parallelism and profiling | Shared read-only index, worker-local workspaces, ordered output, BAM compression/sorting, stage timing | Detailed paired-end stage timing. |
+| Parallelism and profiling | Shared read-only index, worker-local workspaces, concurrent SAM output, BAM compression/sorting, stage timing | Detailed paired-end stage timing. |
 
 <a id="parameter-reference"></a>
 
@@ -332,7 +332,7 @@ Expand a group for defaults, accepted values, and constraints.
 | `--outSAMtype` | `SAM` | `SAM`, `None`, or `BAM` followed by `Unsorted`, `SortedByCoordinate`, or both. |
 | `--outSAMattributes TAG...` | `Standard` | `Standard` expands to `NH HI AS nM`; otherwise list tags explicitly. |
 | `--outSAMunmapped MODE` | `None` | `None` or `Within`; `KeepPairs` is not implemented. |
-| `--outSAMorder MODE` | `Paired` | `Paired` or `PairedKeepInputOrder`. NuSTAR commits unsorted batches in input order in either mode. |
+| `--outSAMorder MODE` | `Paired` | Only `Paired` is accepted. Records within each fragment stay together; input-order output is not supported. |
 | `--outBAMcompression N` | `1` | BGZF compression level, -1 through 9. |
 | `--limitBAMsortRAM BYTES` | `268435456` | Sort-record budget, not a total-process memory limit. Zero also selects 256 MiB in NuSTAR. |
 | `--twopassMode MODE` | `None` | `None` or `Basic`. |
@@ -392,7 +392,7 @@ Not every combination is valid. For example, `CB_UMI_Complex` uses `Exact`, `1MM
 
 | Option or command | Use |
 | --- | --- |
-| `--io-backend mmap` or `buffered` | FASTQ transport; default `mmap`. |
+| `--io-backend pread` | The only FASTQ transport, using on-demand block reads for both single-threaded and multithreaded runs. Historical values `mmap` and `buffered` are compatibility aliases. |
 | `--profile-stages` | Detailed mapping-stage timing, currently single-end only. |
 | `--profile-runtime` | Runtime timing for single-end or paired-end runs. |
 | `--genomeSAalgorithm libsais64` or `libsais40` | Select the index construction backend; default `libsais64`. |
@@ -421,7 +421,7 @@ flowchart TB
     MAP["Map and select alignments<br/>Seed search → Windows → Stitching → Selection<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/pipeline/single_end/pipeline.cpp' target='_blank'>pipeline/single_end/pipeline.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/pipeline/paired_end/pipeline.cpp' target='_blank'>pipeline/paired_end/pipeline.cpp</a></small>"]
     MAP -. "Two-pass enabled" .-> EXTEND["Discover junctions and extend the index<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/runtime/two_pass.cpp' target='_blank'>runtime/two_pass.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/index/junction_insert.cpp' target='_blank'>index/junction_insert.cpp</a></small>"]
     EXTEND -. "Remap original reads" .-> MAP
-    MAP --> ORDER["Commit results in input order<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/runtime/ordered_alignment.cpp' target='_blank'>runtime/ordered_alignment.cpp</a></small>"]
+    MAP --> ORDER["Write completed SAM / BAM batches<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/runtime/alignment_scheduler.cpp' target='_blank'>runtime/alignment_scheduler.cpp</a></small>"]
     ORDER --> OUT["SAM / BAM, junctions, and statistics<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/sam/encode.cpp' target='_blank'>sam/encode.cpp</a> · <a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/bam/sink.cpp' target='_blank'>bam/sink.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/splice_junction/star_junction.cpp' target='_blank'>splice_junction/star_junction.cpp</a><br/><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/statistics/star_statistics.cpp' target='_blank'>statistics/star_statistics.cpp</a></small>"]
     MAP -. "Solo enabled" .-> SOLO["Barcode correction · UMI deduplication<br/>Feature counting · Cell filtering<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/session.cpp' target='_blank'>solo/session.cpp</a> · <a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/worker.cpp' target='_blank'>solo/worker.cpp</a></small>"]
     SOLO --> MATRIX["Raw and filtered matrices<br/><small><a href='https://github.com/BioCode-Commons/NuSTAR/blob/documentation/solo/matrix/write.cpp' target='_blank'>solo/matrix/write.cpp</a></small>"]
@@ -451,7 +451,7 @@ Paired-end mapping can refine overlapping mates before selection. Two-pass mappi
 - **Index construction:** select the default [libsais64](index/wide_suffix_array.cpp) or compact [libsais40](index/libsais40.cpp) backend. The former streams into separate packed storage while releasing consumed source pages on Linux; the latter packs in place and transfers ownership of its workspace. Prefix tables are built after conversion.
 - **Mapping stages:** seed search, window construction, stitching, and selection exchange explicit results. Each worker reuses its own workspace; the [window builder](window/star_window.cpp) tracks and resets only touched bins.
 - **Two-pass index extension:** the [suffix-array merge](index/junction_insert.cpp) splits output ranks into independent chunks. Workers find their starting insertion by binary search and write separate packed ranges.
-- **Output:** the runtime commits results in input order. [BAM sorting](bam/sink.cpp) writes bounded runs to disk and merges them with a priority queue.
+- **Output:** SAM uses concurrent positioned writes. BAM submits completed batches under a writer mutex without waiting for input order. [BAM sorting](bam/sink.cpp) writes bounded runs to disk and merges them with a priority queue.
 
 See [supported modes and limits](#usage-and-parameters).
 
@@ -484,7 +484,7 @@ The Solo steps run only when requested. A run without alignment output still com
 | Choose alignments | [selection/star_select.cpp](selection/star_select.cpp) | Apply candidate selection and mapping filters, including multimapping decisions. |
 | Describe results | [sam/star_single.cpp](sam/star_single.cpp), [sam/star_paired.cpp](sam/star_paired.cpp) | Project selected alignments into SAM fields and tags. These files do not compress BAM. |
 | Gather side results | [splice_junction/star_junction.cpp](splice_junction/star_junction.cpp), [statistics/star_statistics.cpp](statistics/star_statistics.cpp) | Collect junction observations and mapping counters from the same mapping result. |
-| Write records | [sam/encode.cpp](sam/encode.cpp), [output/file_sink.cpp](output/file_sink.cpp), [bam/codec.cpp](bam/codec.cpp), [bam/sink.cpp](bam/sink.cpp) | Encode text or BAM records, write chunks, compress BGZF blocks, and sort BAM when requested. |
+| Write records | [sam/encode.cpp](sam/encode.cpp), [output/file_sink.cpp](output/file_sink.cpp), [bam/codec.cpp](bam/codec.cpp), [bam/sink.cpp](bam/sink.cpp) | Encode text or BAM records, write SAM ranges, compress BGZF blocks, and sort BAM when requested. |
 
 The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeline/single_end/mapping_composition.cpp) and [pipeline/paired_end/mapping_composition.cpp](pipeline/paired_end/mapping_composition.cpp). Their neighboring `pipeline.cpp` files add selection, record projection, junctions, and statistics. This is the place to review how one stage's output becomes the next stage's input.
 
@@ -550,11 +550,13 @@ Solo's counting algorithms come from STAR. The source has been split into module
 
 ## Threads and output order <sup><sub>[↑ Contents](#contents)</sub></sup>
 
-[runtime/ordered_alignment.cpp](runtime/ordered_alignment.cpp) owns the mapping worker loop. Input access is serialized when a worker takes a batch. The expensive mapping work runs outside that input lock.
+[runtime/alignment_scheduler.cpp](runtime/alignment_scheduler.cpp) owns the mapping worker loop. For all FASTQ input, including single-threaded runs and BAM output, [reads/fastq.cpp](reads/fastq.cpp) now reads disjoint 4 MiB byte blocks on demand with `pread`; this is the only FASTQ reader. `--io-backend pread` is the default; `mmap` and `buffered` remain compatibility aliases for the same implementation. Workers independently find newline offsets, publish block line counts, and claim complete SE/PE batches by record ordinal. PE consumes the same four-line record range in both files and uses R1 names, without comparing R2 names. No full-file boundary scan runs before mapping. At most four workers perform block reads concurrently; the same worker pool also copies reads and aligns them. A reusable pool holds at most 32 raw blocks per mate (256 MiB of raw-byte capacity for PE), plus newline offsets and owning read batches. Persistent per-block prefix metadata is proportional to file size / 4 MiB; per-record offsets exist only in the buffer window. Inputs are assumed to contain four-line FASTQ records; incomplete records or unequal mate counts at EOF are reported when they prevent constructing complete pairs. SAM/BAM input retains its own reader. Solo barcode association remains serialized while both FASTQ sources use this reader. Output locking is determined independently by the selected sink.
 
 Each worker has its own workspace, random state, and temporary output buffers. The reference and suffix array are shared read-only. Solo also has per-worker recording state, followed by a merge after mapping.
 
-Batches get sequence numbers. Workers may finish in a different order, but output commits and junction/statistic reductions follow input order. File sinks can spool chunks concurrently and concatenate them later. At most twice the worker count of batches can be in flight, which bounds the reorder backlog when one batch is slow.
+Ordinary `Paired` SAM output coalesces each completed batch, reserves a disjoint byte range with one atomic `fetch_add`, and writes it directly with `pwrite`. Workers do not hold an application input/output mutex or wait for earlier batches, and do not create SAM chunk files. Records within each fragment stay adjacent; different fragments need not follow input order. Each worker retains at most one active input/output batch. Statistics are accumulated locally and junction observations are merged in batch order after workers join. File-system operations, allocation, and page faults can still block: only range allocation and application I/O coordination are lock-free.
+
+There is no input-order output mode, reorder queue, chunk staging, or wait for a previous batch. BAM writers are serialized by a mutex because their compression/sorting state is shared, but receive batches in completion-dependent order. `--outSAMorder` accepts only `Paired`; requesting input-order output is rejected.
 
 Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes bounded runs and merges them, rather than keeping the whole BAM in memory. The runtime releases mapping resources it no longer needs before the remaining counting and sorting work; shared owners can keep resources alive longer, including during two-pass runs.
 

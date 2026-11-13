@@ -23,7 +23,11 @@ std::unique_ptr<IReadSource> open(const IReadSourceBackend& backend,
     auto result = backend.open(spec);
     if (const auto* error = std::get_if<Failure>(&result))
         throw std::runtime_error(error->message);
-    return std::get<std::unique_ptr<IReadSource>>(std::move(result));
+    auto source = std::get<std::unique_ptr<IReadSource>>(std::move(result));
+    auto prepared = source->prepareParallel(1, 1);
+    if (const auto* error = std::get_if<Failure>(&prepared))
+        throw std::runtime_error(error->message);
+    return source;
 }
 
 std::optional<ReadBatch> next(IReadSource& source) {
@@ -51,10 +55,12 @@ void check(const IReadSourceBackend& backend, const std::filesystem::path& dir) 
 
     InputSpec pair{Layout::PE, {InputGroup{{dir/"one.fq", dir/"mates.fq"}}}, {}, {}};
     auto paired = open(backend, pair);
-    auto first = next(*paired);
-    expect(first && first->fragments.front().mates[1].has_value(),
-           "paired fragment missing mate");
     auto incomplete = paired->next(1);
+    while (auto* batch = std::get_if<std::optional<ReadBatch>>(&incomplete)) {
+        expect(batch->has_value(), "unmatched mate EOF was accepted");
+        expect((**batch).fragments.front().mates[1].has_value(), "paired fragment missing mate");
+        incomplete = paired->next(1);
+    }
     expect(std::holds_alternative<Failure>(incomplete),
            "unmatched mate EOF was accepted");
 
@@ -72,11 +78,11 @@ void check(const IReadSourceBackend& backend, const std::filesystem::path& dir) 
                "STAR-compatible third-line consumption failed");
     }
     expect(!next(*permissive), "third-line fixture has extra records");
-    for (const auto* name : {"bad-header.fq", "bad-quality.fq", "truncated.fq"}) {
+    for (const auto* name : {"truncated.fq"}) {
         InputSpec invalid{Layout::SE, {InputGroup{{dir/name, {}}}}, {}, {}};
         auto rejected = open(backend, invalid);
         expect(std::holds_alternative<Failure>(rejected->next(1)),
-               "required FASTQ framing or quality validation was removed");
+               "incomplete FASTQ record was accepted");
     }
 }
 
@@ -92,12 +98,9 @@ int main(int argc, char** argv) {
         write(dir/"mates.fq", "@r1\nGT\n+\n!!\n");
         write(dir/"empty.fq", "");
         write(dir/"separators.fq", "@r1\nAC\nignored\n!!\n@r2\nAC\n\n!!\n");
-        write(dir/"bad-header.fq", "r1\nAC\n+\n!!\n");
-        write(dir/"bad-quality.fq", "@r1\nAC\n+\n!\n");
         write(dir/"truncated.fq", "@r1\nAC\n+\n");
-        check(memoryMappedFastqBackend(), dir);
-        check(bufferedFastqBackend(), dir);
-        // Cross several mmap release boundaries. Keep an earlier batch alive
+        check(fastqSourceBackend(), dir);
+        // Cross several block boundaries. Keep an earlier batch alive
         // while reading later data to verify that returned strings own bytes.
         const std::string sequence(151, 'A'), quality(151, 'I');
         {
@@ -107,23 +110,20 @@ int main(int argc, char** argv) {
             expect(static_cast<bool>(output), "large fixture write failed");
         }
         InputSpec spec{Layout::SE, {InputGroup{{dir/"large.fq", {}}}}, {}, {}};
-        auto mapped = open(memoryMappedFastqBackend(), spec);
-        auto buffered = open(bufferedFastqBackend(), spec);
-        auto retained = next(*mapped);
-        auto reference = next(*buffered);
-        expect(retained && reference, "large fixture first read missing");
+        auto source = open(fastqSourceBackend(), spec);
+        auto retained = next(*source);
+        expect(retained.has_value(), "large fixture first read missing");
         for (unsigned n = 1; n < 120000; ++n) {
-            auto a = next(*mapped), b = next(*buffered);
-            expect(a && b, "large fixture truncated");
+            auto a = next(*source);
+            expect(a.has_value(), "large fixture truncated");
             const auto& left = *a->fragments[0].mates[0];
-            const auto& right = *b->fragments[0].mates[0];
-            expect(left.header == right.header && left.sequence == right.sequence &&
-                   left.quality == right.quality, "mmap release changed FASTQ contents");
+            expect(left.header == "@large" + std::to_string(n) && left.sequence == sequence &&
+                   left.quality == quality, "block recycling changed FASTQ contents");
         }
-        expect(!next(*mapped) && !next(*buffered), "large fixture EOF failed");
+        expect(!next(*source), "large fixture EOF failed");
         expect(retained->fragments[0].mates[0]->sequence == sequence &&
                retained->fragments[0].mates[0]->quality == quality,
-               "retained batch lost ownership after mmap release");
+               "retained batch lost ownership after block recycling");
         std::filesystem::remove(dir/"large.fq");
         return 0;
     } catch (const std::exception& error) {

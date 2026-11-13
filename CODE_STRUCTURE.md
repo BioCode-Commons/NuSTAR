@@ -12,7 +12,7 @@ The main path is:
 CLI -> runtime setup -> input batches
     -> prepare sequence -> seed search -> windows -> stitching
     -> select/filter alignments -> SAM records + junctions + statistics
-    -> ordered output
+    -> submit completed output batches
     -> merge Solo counts -> correct tags -> finish coordinate-sorted BAM
 ```
 
@@ -31,7 +31,7 @@ The Solo steps run only when requested. A run without alignment output still com
 | Choose alignments | [selection/star_select.cpp](selection/star_select.cpp) | Apply candidate selection and mapping filters, including multimapping decisions. |
 | Describe results | [sam/star_single.cpp](sam/star_single.cpp), [sam/star_paired.cpp](sam/star_paired.cpp) | Project selected alignments into SAM fields and tags. These files do not compress BAM. |
 | Gather side results | [splice_junction/star_junction.cpp](splice_junction/star_junction.cpp), [statistics/star_statistics.cpp](statistics/star_statistics.cpp) | Collect junction observations and mapping counters from the same mapping result. |
-| Write records | [sam/encode.cpp](sam/encode.cpp), [output/file_sink.cpp](output/file_sink.cpp), [bam/codec.cpp](bam/codec.cpp), [bam/sink.cpp](bam/sink.cpp) | Encode text or BAM records, write chunks, compress BGZF blocks, and sort BAM when requested. |
+| Write records | [sam/encode.cpp](sam/encode.cpp), [output/file_sink.cpp](output/file_sink.cpp), [bam/codec.cpp](bam/codec.cpp), [bam/sink.cpp](bam/sink.cpp) | Encode text or BAM records, write SAM ranges, compress BGZF blocks, and sort BAM when requested. |
 
 The stage order is wired in [pipeline/single_end/mapping_composition.cpp](pipeline/single_end/mapping_composition.cpp) and [pipeline/paired_end/mapping_composition.cpp](pipeline/paired_end/mapping_composition.cpp). Their neighboring `pipeline.cpp` files add selection, record projection, junctions, and statistics. This is the place to review how one stage's output becomes the next stage's input.
 
@@ -85,11 +85,13 @@ Solo's counting algorithms come from STAR. The source has been split into module
 
 ## Threads and output order
 
-[runtime/ordered_alignment.cpp](runtime/ordered_alignment.cpp) owns the mapping worker loop. Input access is serialized when a worker takes a batch. The expensive mapping work runs outside that input lock.
+[runtime/alignment_scheduler.cpp](runtime/alignment_scheduler.cpp) owns the mapping worker loop. For all FASTQ input, including single-threaded runs and BAM output, [reads/fastq.cpp](reads/fastq.cpp) now reads disjoint 4 MiB byte blocks on demand with `pread`; this is the only FASTQ reader. `--io-backend pread` is the default; `mmap` and `buffered` remain compatibility aliases for the same implementation. Workers independently find newline offsets, publish block line counts, and claim complete SE/PE batches by record ordinal. PE consumes the same four-line record range in both files and uses R1 names, without comparing R2 names. No full-file boundary scan runs before mapping. At most four workers perform block reads concurrently; the same worker pool also copies reads and aligns them. A reusable pool holds at most 32 raw blocks per mate (256 MiB of raw-byte capacity for PE), plus newline offsets and owning read batches. Persistent per-block prefix metadata is proportional to file size / 4 MiB; per-record offsets exist only in the buffer window. Inputs are assumed to contain four-line FASTQ records; incomplete records or unequal mate counts at EOF are reported when they prevent constructing complete pairs. SAM/BAM input retains its own reader. Solo barcode association remains serialized while both FASTQ sources use this reader. Output locking is determined independently by the selected sink.
 
 Each worker has its own workspace, random state, and temporary output buffers. The reference and suffix array are shared read-only. Solo also has per-worker recording state, followed by a merge after mapping.
 
-Batches get sequence numbers. Workers may finish in a different order, but output commits and junction/statistic reductions follow input order. File sinks can spool chunks concurrently and concatenate them later. At most twice the worker count of batches can be in flight, which bounds the reorder backlog when one batch is slow.
+Ordinary `Paired` SAM output coalesces each completed batch, reserves a disjoint byte range with one atomic `fetch_add`, and writes it directly with `pwrite`. Workers do not hold an application input/output mutex or wait for earlier batches, and do not create SAM chunk files. Records within each fragment stay adjacent; different fragments need not follow input order. Each worker retains at most one active input/output batch. Statistics are accumulated locally and junction observations are merged in batch order after workers join. File-system operations, allocation, and page faults can still block: only range allocation and application I/O coordination are lock-free.
+
+There is no input-order output mode, reorder queue, chunk staging, or wait for a previous batch. BAM writers are serialized by a mutex because their compression/sorting state is shared, but receive batches in completion-dependent order. `--outSAMorder` accepts only `Paired`; requesting input-order output is rejected.
 
 Coordinate sorting is a separate step in [bam/sink.cpp](bam/sink.cpp). It writes bounded runs and merges them, rather than keeping the whole BAM in memory. The runtime releases mapping resources it no longer needs before the remaining counting and sorting work; shared owners can keep resources alive longer, including during two-pass runs.
 

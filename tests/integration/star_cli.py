@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix="nustar-star-cli-") as temp:
             args = ["--readFilesIn", *reads, "--genomeDir", index,
                     "--outFileNamePrefix", prefix, "--runThreadN", threads,
                     "--outSAMtype", "SAM", "--outSAMunmapped", "Within",
-                    "--outSAMorder", "PairedKeepInputOrder"]
+                    "--outSAMorder", "Paired"]
             run(*args, *([] if paired else ["--profile-stages"]))
             assert records(Path(prefix + "Aligned.out.sam")) == records(baseline)
             assert Path(prefix + "SJ.out.tab").read_bytes() == Path(baseline_prefix + "SJ.out.tab").read_bytes()
@@ -78,7 +78,7 @@ with tempfile.TemporaryDirectory(prefix="nustar-star-cli-") as temp:
                 prefix = str(root / f"star-{paired}-{mode}.")
                 subprocess.run([str(star), "--genomeDir", str(root / "star-index"),
                                 "--readFilesIn", *map(str, reads), "--runThreadN", "2",
-                                "--outSAMunmapped", mode, "--outSAMorder", "PairedKeepInputOrder",
+                                "--outSAMunmapped", mode, "--outSAMorder", "Paired",
                                 "--outFileNamePrefix", prefix],
                                cwd=root, check=True, capture_output=True, timeout=60)
                 actual = baseline if mode == "Within" else out / "Aligned.out.sam"

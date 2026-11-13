@@ -17,7 +17,7 @@
 #include "bam_output.hpp"
 #include "defaults.hpp"
 #include "input_tags.hpp"
-#include "ordered_alignment.hpp"
+#include "alignment_scheduler.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -112,7 +112,6 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
         if (!options.run.output_attributes.empty())
             sam.outSAMattributes = options.run.output_attributes;
         sam.unmapped_within = options.outSAMunmappedWithin;
-        sam.outSAMorder = options.outSAMorder;
         PairedSamConfig paired_sam{sam, false};
         auto projector = makeStarPairedSamProjector();
         const auto sj_config = defaultStarSjOutputConfig();
@@ -143,10 +142,9 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
         if (input_spec.groups.empty())
             input_spec.groups.push_back(InputGroup{{options.mate1_fastq, options.mate2_fastq}});
         input_spec.capture_aux = options.run.bam_input;
-        const auto& input_backend = options.run.bam_input          ? bamSourceBackend()
-                                    : options.io_backend == "mmap" ? memoryMappedFastqBackend()
-                                                                   : bufferedFastqBackend();
-        if (options.io_backend != "mmap" && options.io_backend != "buffered")
+        const auto& input_backend = options.run.bam_input ? bamSourceBackend()
+                                                        : fastqSourceBackend();
+        if (options.io_backend != "pread" && options.io_backend != "mmap" && options.io_backend != "buffered")
             throw std::runtime_error("unknown FASTQ IO backend");
         auto rna_source =
             limitReads(checked(input_backend.open(input_spec)), options.run.read_limit);
@@ -159,7 +157,7 @@ Result<PairedSamReport> runPairedSam(const PairedSamOptions& options) {
                                           options.outFileNamePrefix, options.run.sam_enabled},
                               options.run.bam, metadata, solo_session));
         const auto coarse_started = std::chrono::steady_clock::now();
-        auto report = checked(runOrderedAlignment(
+        auto report = checked(runParallelAlignment(
             *source, *sink, sam_header, sj_config, metadata, options.threads, 1ULL << 20,
             [pipeline, budget, solo_session]() -> Result<std::unique_ptr<StageWorkspace>> {
                 auto workspace = pipeline->createWorkspace(budget);

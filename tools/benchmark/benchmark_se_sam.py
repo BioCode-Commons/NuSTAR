@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Alternating, exact-SAM benchmark of project STAR and native mapping.
 
-STAR runs one thread for stable record order; NuSTAR can use multiple workers.
+STAR runs one thread; NuSTAR can use multiple workers. Outputs are grouped by QNAME outside the timed invocation.
 STAR output headers contain its command line;
-@SQ rows and every ordered SAM body row are compared exactly.
+@SQ rows and every regrouped SAM body row are compared exactly.
 """
 
 import argparse
@@ -20,6 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "tests/integration"))
 
 from compare_sam import compare_ordered_sam
+from sort_sam_for_comparison import group_by_qname
 
 
 def numeric_statistics(path: Path) -> dict[str, str]:
@@ -90,7 +91,7 @@ def main() -> None:
                         "--readFilesIn", str(args.reads.resolve())] +
                        ([str(args.mate2.resolve())] if args.mate2 else []) +
                        ["--outFileNamePrefix", nustar_prefix, "--outSAMtype", "SAM",
-                        "--outSAMunmapped", "Within", "--outSAMorder", "PairedKeepInputOrder",
+                        "--outSAMunmapped", "Within", "--outSAMorder", "Paired",
                         "--runThreadN", str(args.nustar_threads), "--io-backend", args.io_backend]),
         }
         times = {}
@@ -99,6 +100,8 @@ def main() -> None:
                 args.work_dir / f"{name}-{repetition}.stdout",
                 args.work_dir / f"{name}-{repetition}.stderr")
         star_sam = Path(str(star_prefix) + "Aligned.out.sam")
+        group_by_qname(star_sam)
+        group_by_qname(nustar_sam)
         sam_records = compare_ordered_sam(star_sam, nustar_sam)
         sj_rows = None
         if args.compare_sj:
@@ -143,7 +146,7 @@ def main() -> None:
         "nustar_threads": args.nustar_threads, "io_backend": args.io_backend,
         "mate2": str(args.mate2.resolve()) if args.mate2 else None,
         "sam_header_comparison": "excluded (STAR records its own command line)",
-        "sam_body_comparison": "ordered, all fields, tags and multiplicity exact",
+        "sam_body_comparison": "QNAME-regrouped, all fields, tags and multiplicity exact",
         "sj_table_comparison": "byte exact" if args.compare_sj else "not compared",
         "statistics_comparison": "numeric fields exact; timestamps and mapping speed excluded"
             if args.compare_stats else "not compared",

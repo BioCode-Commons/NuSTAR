@@ -14,7 +14,7 @@ inline bool isSoloAttribute(std::string_view tag) {
 }
 struct SamConfig {
     bool enabled;
-    std::string outSAMmode, outSAMorder, outSAMreadID;
+    std::string outSAMmode, outSAMreadID;
     std::vector<std::string> outSAMattributes; // Expanded tags in exact output order.
     std::uint64_t outSAMattrIHstart;
     std::uint8_t outSAMmapqUnique;

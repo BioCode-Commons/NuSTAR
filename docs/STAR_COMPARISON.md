@@ -68,12 +68,6 @@ The no-BAM Solo result in group B is from the refactored Solo build. The older `
 
 For the human sorted-BAM comparison, the decoded-record agreement is 100% of the 1,215,901 checked records. For unsorted BAM, the complete record multisets agree. Neither number estimates the fraction of reads aligned to their true biological origin.
 
-### A known behavior difference
-
-One saved two-pass edge case differs from the shipped STAR binary: with four threads, `--twopass1readsN 40`, and `--outSAMorder PairedKeepInputOrder`, STAR returned success but wrote zero alignment records, while NuSTAR wrote 227. The regular two-pass comparisons used `--outSAMorder Paired` and passed.
-
-This is recorded in [ordered-reference-behavior.json](../build/feature-migration/two-pass/ordered-reference-behavior.json). It is a compatibility difference in that tested combination, even though producing the records is the useful outcome. It should not be hidden behind a general claim that all behavior is identical.
-
 ### Mapping rates in the human runs
 
 These values come from group A's `Log.final.out` files, including its accompanying one-pass Solo runs. STAR and NuSTAR report the same percentages at both thread counts.

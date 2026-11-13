@@ -15,11 +15,10 @@ struct PairedSamOptions {
     std::filesystem::path output_sam;
     std::string command_line;
     std::uint32_t threads = 1;
-    std::string io_backend = "mmap";
+    std::string io_backend = "pread";
     // Empty preserves the legacy explicit-SAM-path API's auxiliary filenames.
     std::optional<std::string> outFileNamePrefix;
     bool outSAMunmappedWithin = true;
-    std::string outSAMorder = "PairedKeepInputOrder";
     RunControl run;
 };
 
