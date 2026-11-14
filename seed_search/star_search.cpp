@@ -1,5 +1,6 @@
 #include "star_search.hpp"
-#include "base_compare.hpp"
+#include "seed_compare.hpp"
+#include "prefix_code.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -48,16 +49,18 @@ StarSeedSearch::StarSeedSearch(std::shared_ptr<const SuffixArrayIndex> index,
         policy_.maxNsplit == 0 || policy_.seedPerReadNmax == 0)
         throw std::invalid_argument("invalid STAR seed policy");
     genome_ = reference_->starGenome();
+    use_avx2_ = detail::avx2Available();
 
 }
 
 // STAR SuffixArrayFuns.cpp::compareSeqToGenome. The four direction cases
 // use the same shared Genome.G bytes. Only legacy physical SA decoding differs;
 // suffix ranks and all comparison decisions are unchanged.
-template<bool WordComparison>
+template<bool Forward>
 std::uint64_t StarSeedSearch::compare(const MappingRead& read, std::uint64_t start,
     std::uint64_t length, std::uint64_t known, std::uint64_t rank,
-    bool forward, bool& query_greater) const {
+    bool& query_greater) const {
+    constexpr bool forward=Forward;
     if (known == length) return length;
     const auto position = index_->suffixArray()[rank];
     const auto synthetic_start = 2*real_length_+40;
@@ -78,50 +81,30 @@ std::uint64_t StarSeedSearch::compare(const MappingRead& read, std::uint64_t sta
         genome_forward = false;
     }
     const auto* s = read.encoded[forward == genome_forward ? 0 : 1].data()+start;
-    if constexpr (WordComparison) {
-        s += forward ? static_cast<std::ptrdiff_t>(known) : -static_cast<std::ptrdiff_t>(known);
-        g += genome_forward ? static_cast<std::ptrdiff_t>(known) : -static_cast<std::ptrdiff_t>(known);
-        const auto remaining=length-known;
-        const auto* begin=genome_.data();
-        const auto* end=begin+genome_.size();
-        if (forward && genome_forward)
-            return known+detail::compareBases<true,true>(s,g,remaining,begin,end,query_greater);
-        if (forward)
-            return known+detail::compareBases<true,false>(s,g,remaining,begin,end,query_greater);
-        if (genome_forward)
-            return known+detail::compareBases<false,true>(s,g,remaining,begin,end,query_greater);
-        return known+detail::compareBases<false,false>(s,g,remaining,begin,end,query_greater);
-    } else {
-        const auto remaining = length-known;
-        if (forward && genome_forward) {
-            s += known; g += known;
-            for (std::uint64_t i=0; i<remaining; ++i)
-                if (s[i] != g[i]) { query_greater = s[i] > g[i]; return i+known; }
-        } else if (forward && !genome_forward) {
-            s += known; g -= known;
-            for (std::int64_t i=0; std::uint64_t(i)<remaining; ++i)
-                if (s[i] != g[-i]) {
-                    query_greater = !(s[i] > g[-i] || std::uint8_t(g[-i]) > 3);
-                    return i+known;
-                }
-        } else if (!forward && genome_forward) {
-            s -= known; g += known;
-            for (std::int64_t i=0; std::uint64_t(i)<remaining; ++i)
-                if (s[-i] != g[i]) { query_greater = s[-i] > g[i]; return i+known; }
-        } else {
-            s -= known; g -= known;
-            for (std::int64_t i=0; std::uint64_t(i)<remaining; ++i)
-                if (s[-i] != g[-i]) {
-                    query_greater = !(s[-i] > g[-i] || std::uint8_t(g[-i]) > 3);
-                    return i+known;
-                }
-        }
-        return length;
-    }
+    s += forward ? static_cast<std::ptrdiff_t>(known) : -static_cast<std::ptrdiff_t>(known);
+    g += genome_forward ? static_cast<std::ptrdiff_t>(known) : -static_cast<std::ptrdiff_t>(known);
+    const auto remaining=length-known;
+    const auto* begin=genome_.data();
+    const auto* end=begin+genome_.size();
+    if (forward && genome_forward)
+        return known+detail::compareSeedBases<true,true>(s,g,remaining,begin,end,query_greater,use_avx2_);
+    if (forward)
+        return known+detail::compareSeedBases<true,false>(s,g,remaining,begin,end,query_greater,use_avx2_);
+    if (genome_forward)
+        return known+detail::compareSeedBases<false,true>(s,g,remaining,begin,end,query_greater,use_avx2_);
+    return known+detail::compareSeedBases<false,false>(s,g,remaining,begin,end,query_greater,use_avx2_);
 }
 
 StarSeedSearch::Match StarSeedSearch::longest(const MappingRead& read,
     std::uint64_t start, std::uint64_t length, bool forward) const {
+    return forward ? longestImpl<true>(read,start,length) :
+                     longestImpl<false>(read,start,length);
+}
+
+template<bool Forward>
+StarSeedSearch::Match StarSeedSearch::longestImpl(const MappingRead& read,
+    std::uint64_t start, std::uint64_t length) const {
+    constexpr bool forward=Forward;
     const auto& suffixes = index_->suffixArray();
     if (suffixes.empty() || length == 0) return {};
     const auto query = forward ? std::span(read.encoded[0]).subspan(start, length) :
@@ -130,8 +113,7 @@ StarSeedSearch::Match StarSeedSearch::longest(const MappingRead& read,
     std::uint32_t known = 0;
     const auto& sai=index_->prefixIndex();
     unsigned level=std::min<std::uint64_t>(length,index_->prefixBases());
-    std::uint64_t code=0;
-    for (unsigned i=0;i<level;++i) code=(code<<2)|std::uint8_t(query[i]);
+    auto code=detail::prefixCode(query.data(),level);
     std::uint64_t first=0;
     while (level) {
         first=sai[sai.levelStart(level)+code];
@@ -156,9 +138,8 @@ StarSeedSearch::Match StarSeedSearch::longest(const MappingRead& read,
             return {level,domain_begin,last,domain_end-domain_begin};
         if (first==last && no_n && upper_good) {
             bool greater=false;
-            // Only the existing singleton-extension branch uses word loads.
-            // Interval probes usually differ early and are faster bytewise.
-            const auto matched=compare<true>(read,start,length,level,first,forward,greater);
+            // Extend a singleton using the same bounded comparison kernel.
+            const auto matched=compare<Forward>(read,start,length,level,first,greater);
             return {matched,first,first,1};
         }
         if (upper_good && no_n) known=level;
@@ -168,7 +149,7 @@ StarSeedSearch::Match StarSeedSearch::longest(const MappingRead& read,
     // STAR's exact-match exit and its tie choice, including SAi fallback bounds.
     bool greater = false;
     auto cmp = [&](std::uint64_t rank, std::uint64_t n, std::uint64_t equal) {
-        return compare<false>(read, start, n, equal, rank, forward, greater);
+        return compare<Forward>(read, start, n, equal, rank, greater);
     };
     std::uint64_t i1=domain_begin, i2=domain_end-1;
     auto L1=cmp(i1,length,known), L2=cmp(i2,length,known);
@@ -307,7 +288,15 @@ Status StarSeedSearch::search(const MappingRead& read, StarSeedSearchResult& res
             effective_start < split_length ? split_length/effective_start+1 : 1;
         const auto step = split_length/starts;
         bool reverse_first_needed = true;
-        for (std::uint64_t direction = 0; direction < 2; ++direction)
+        // An uncapped query always runs to this split's fixed opposite end.
+        // Its direction and anchor therefore identify all input bytes exactly.
+        // Keep the memo local to one direction/split and bound its stack storage.
+        constexpr std::size_t query_cache_size=256;
+        const bool cache_queries = policy_.seedSearchLmax == 0 &&
+            split_length <= query_cache_size && starts > 1;
+        for (std::uint64_t direction = 0; direction < 2; ++direction) {
+            std::array<Match,query_cache_size> query_cache; // Only valid slots are read.
+            std::array<std::uint64_t,query_cache_size/64> query_valid{};
             for (std::uint64_t start = 0; start < starts; ++start) {
                 if (reverse_first_needed || start > 0) {
                     std::uint64_t mapped = 0;
@@ -316,7 +305,20 @@ Status StarSeedSearch::search(const MappingRead& read, StarSeedSearchResult& res
                             begin+start*step+mapped :
                             begin+split_length-start*step-1-mapped;
                         const auto remaining = split_length-mapped-start*step;
-                        const auto match = longest(read, shift, remaining, direction == 0);
+                        // Per-direction, per-split exact query memo. This does not
+                        // change query order or any store/counter decision.
+                        Match match;
+                        if (cache_queries) {
+                            const auto key = shift-begin;
+                            const auto bit = std::uint64_t{1} << (key%64);
+                            auto& valid = query_valid[key/64];
+                            if (valid & bit) match = query_cache[key];
+                            else {
+                                match = longest(read, shift, remaining, direction == 0);
+                                query_cache[key] = match;
+                                valid |= bit;
+                            }
+                        } else match = longest(read, shift, remaining, direction == 0);
                         if (match.length == 0)
                             return seedError(ErrorKind::Index,
                                 "zero-length STAR seed would not advance", read.fragment);
@@ -343,6 +345,7 @@ Status StarSeedSearch::search(const MappingRead& read, StarSeedSearchResult& res
                         return std::get<Failure>(std::move(status));
                 }
             }
+        }
     }
     if (length < policy_.outFilterMatchNmin) result.map_marker = 999910;
     else if (splits.empty()) result.map_marker = 999904;

@@ -48,15 +48,19 @@ private:
     };
     Match longest(const MappingRead& read, std::uint64_t start,
                   std::uint64_t length, bool forward) const;
-    template<bool WordComparison>
+    template<bool Forward>
+    Match longestImpl(const MappingRead& read, std::uint64_t start,
+                      std::uint64_t length) const;
+    template<bool Forward>
     std::uint64_t compare(const MappingRead& read, std::uint64_t start,
         std::uint64_t length, std::uint64_t known, std::uint64_t rank,
-        bool forward, bool& query_greater) const;
+        bool& query_greater) const;
     std::shared_ptr<const SuffixArrayIndex> index_;
     std::shared_ptr<const GenomeReferenceData> reference_;
     SeedConfig policy_;
     std::span<const BaseCode> genome_;
     std::uint64_t real_length_ = 0;
+    bool use_avx2_ = false;
 
 };
 
