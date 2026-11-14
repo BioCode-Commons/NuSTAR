@@ -5,6 +5,9 @@ target_link_libraries(compare-genome-indices PRIVATE nustar_sa_index)
 add_executable(seed-trace tools/trace/seed_trace.cpp)
 target_link_libraries(seed-trace PRIVATE nustar_seed nustar_timing)
 
+add_executable(seed-benchmark tools/benchmark/seed_benchmark.cpp)
+target_link_libraries(seed-benchmark PRIVATE nustar_seed nustar_utils)
+
 add_executable(stitch-trace tools/trace/stitch_trace.cpp)
 target_link_libraries(stitch-trace PRIVATE nustar_single_mapping nustar_timing)
 
