@@ -12,7 +12,6 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
-#include <omp.h>
 #include <source_location>
 #include <sstream>
 #include <string>
