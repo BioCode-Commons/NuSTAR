@@ -676,3 +676,9 @@ NuSTAR builds on [STAR](https://github.com/alexdobin/STAR) and STARsolo by Alexa
 </details>
 
 Upstream attribution is recorded in [solo/UPSTREAM.json](solo/UPSTREAM.json); licenses for STAR-derived code, HTSlib, libsais, and Simple Good–Turing are retained in [solo/STAR.LICENSE](solo/STAR.LICENSE) and [third_party/](third_party/).
+
+## Publishing benchmark results
+
+Maintainers publish benchmark updates through this repository. Update [`benchmarks/published.json`](benchmarks/published.json) and the supporting benchmark report, pass the **Published benchmark** check, then merge the PR into `main`. The BioCode Commons website updates automatically; no website edit or personal publishing token is needed.
+
+See [contributor guidelines](CONTRIBUTING.md#benchmark-publication) for the review checklist and [the data format](benchmarks/README.md) for field definitions.
