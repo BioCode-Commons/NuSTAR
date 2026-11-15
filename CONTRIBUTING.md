@@ -21,4 +21,4 @@ Only benchmark data is synchronized. Editing a README alone does not publish new
 
 ### Responsibility and handover
 
-Project maintainers and reviewers own benchmark selection and evidence in their repository. The organization administrator maintains the shared publisher and rotates its credential. Credentials belong in Actions Secrets, never in source files, reports, issues or pull requests. A new project maintainer needs neither a personal publishing token nor access to the website repository. The workflow contains no individual maintainer names.
+Project maintainers and reviewers own benchmark selection and evidence in their repository. The organization administrator maintains the shared publisher and rotates the organization GitHub App private key. Credentials belong in Actions Secrets, never in source files, reports, issues or pull requests. A new project maintainer needs neither a personal publishing token nor access to the website repository. The workflow contains no individual maintainer names.

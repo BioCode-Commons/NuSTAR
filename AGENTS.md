@@ -14,4 +14,4 @@ See `benchmarks/README.md` for the publication workflow. Do not add heuristic pl
 
 ## Maintainer workflow
 
-Read root `CONTRIBUTING.md` before publishing benchmark changes. Keep numbers repeated in the root README consistent with `benchmarks/published.json` and its evidence. Prose edits alone do not update the website. Do not configure a personal token per maintainer or change another project's results. The organization administrator owns the publishing credential; project reviewers own measurement quality.
+Read root `CONTRIBUTING.md` before publishing benchmark changes. Keep numbers repeated in the root README consistent with `benchmarks/published.json` and its evidence. Prose edits alone do not update the website. Do not configure a personal token per maintainer or change another project's results. The organization administrator manages the publishing App and its private key; project reviewers own measurement quality.
