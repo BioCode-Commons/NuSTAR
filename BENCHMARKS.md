@@ -13,12 +13,15 @@ Single-end alignment, paired-end alignment, and paired overlap refinement use th
 
 | Workload | STAR time / peak RSS | NuSTAR time / peak RSS | Output comparison |
 | :--- | :--- | :--- | :--- |
-| Index construction | 1094.262 s / 70.013 GiB | 375.877 s / 47.798 GiB | passed |
+| Index construction (libsais40) | 1095.416 s / 70.016 GiB | 374.413 s / 47.799 GiB | passed |
 | Single-end alignment | 658.994 s / 33.481 GiB | 503.396 s / 29.918 GiB | passed |
 | Paired-end alignment | 1610.968 s / 33.488 GiB | 1217.181 s / 29.960 GiB | passed |
 | Paired overlap refinement | 1904.047 s / 34.852 GiB | 1488.024 s / 30.058 GiB | passed |
-| Two-pass mapping | 1644.326 s / 49.496 GiB | 1562.513 s / 40.732 GiB | passed |
-| Solo counting | 121.487 s / 35.938 GiB | 84.823 s / 32.100 GiB | passed |
+| Two-pass single-end mapping | 1644.442 s / 49.492 GiB | 1212.230 s / 40.929 GiB | passed |
+| Two-pass paired-end mapping | 4241.699 s / 50.198 GiB | 2926.378 s / 41.421 GiB | passed |
+| Coordinate-sorted BAM, single-end | 934.660 s / 100.734 GiB | 1555.086 s / 30.037 GiB | passed |
+| Coordinate-sorted BAM, paired-end | 3326.571 s / 99.876 GiB | 3270.033 s / 30.138 GiB | passed |
+| Solo counting | 118.887 s / 35.939 GiB | 81.207 s / 31.780 GiB | passed |
 
 Output checks will report whether alignment records and tags, junctions, mapping statistics, and Solo matrices match. File-byte equality will be reported separately from decoded-record equality.
 
