@@ -1,6 +1,6 @@
 # Published benchmarks
 
-The BioCode Commons website reads `benchmarks/published.json` from this repository's `main` branch. This is the only file used for benchmark publication; ordinary documentation edits do not change the website.
+Each project maintainer updates `benchmarks/published.json` and the corresponding benchmark documentation in their own repository, then GitHub Actions validates the data and publishes only the benchmark updates to the BioCode Commons website after the changes merge into `main`.
 
 - Update this file when publishing a reviewed benchmark result. Keep experimental runs out of it until maintainers select them for publication.
 - Record measured baseline and candidate wall times and peak RSS, with explicit units, resource counts, memory scope and timing scope. Do not infer missing measurements or select the fastest repeat.
