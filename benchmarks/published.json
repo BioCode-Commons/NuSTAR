@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "project": "NuSTAR",
+  "evidence_url": "https://github.com/BioCode-Commons/NuSTAR/blob/3da465796b14f6f1e3f7ffb427d5b1a53fae8163/BENCHMARKS.md",
+  "rss_unit": "GiB",
+  "rss_scope": "process peak RSS",
+  "time_scope": "As specified for each task in the cited benchmark",
+  "rows": [
+    {
+      "dataset": "Index construction",
+      "resources": "32 threads",
+      "baseline_seconds": 1094.262,
+      "candidate_seconds": 375.877,
+      "baseline_rss": 70.013,
+      "candidate_rss": 47.798
+    },
+    {
+      "dataset": "Single-end · 535.7M reads",
+      "resources": "32 threads",
+      "baseline_seconds": 658.994,
+      "candidate_seconds": 503.396,
+      "baseline_rss": 33.481,
+      "candidate_rss": 29.918
+    },
+    {
+      "dataset": "Paired-end · 535.7M read pairs",
+      "resources": "32 threads",
+      "baseline_seconds": 1610.968,
+      "candidate_seconds": 1217.181,
+      "baseline_rss": 33.488,
+      "candidate_rss": 29.96
+    },
+    {
+      "dataset": "Paired overlap · 535.7M read pairs",
+      "resources": "32 threads",
+      "baseline_seconds": 1904.047,
+      "candidate_seconds": 1488.024,
+      "baseline_rss": 34.852,
+      "candidate_rss": 30.058
+    },
+    {
+      "dataset": "Two-pass · 535.7M reads",
+      "resources": "32 threads",
+      "baseline_seconds": 1644.326,
+      "candidate_seconds": 1562.513,
+      "baseline_rss": 49.496,
+      "candidate_rss": 40.732
+    },
+    {
+      "dataset": "Solo counting · 66.6M RNA/barcode pairs",
+      "resources": "32 threads",
+      "baseline_seconds": 121.487,
+      "candidate_seconds": 84.823,
+      "baseline_rss": 35.938,
+      "candidate_rss": 32.1
+    }
+  ],
+  "caption": [
+    {
+      "text": "32 threads on AMD EPYC 9634. "
+    },
+    {
+      "text": "Benchmark source",
+      "url": "https://github.com/BioCode-Commons/NuSTAR/blob/3da465796b14f6f1e3f7ffb427d5b1a53fae8163/BENCHMARKS.md"
+    },
+    {
+      "text": "."
+    }
+  ],
+  "note": [],
+  "display": {
+    "time_decimals": 3,
+    "rss_decimals": 3,
+    "speedup_column": false
+  },
+  "summary_context": ""
+}
