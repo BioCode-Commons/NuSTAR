@@ -11,3 +11,7 @@ The BioCode Commons website reads `benchmarks/published.json` from this reposito
 - Do not edit the website manually to publish these results. Only benchmark tables and performance summaries sync; project descriptions and validation prose remain under website maintainers' control.
 
 See `benchmarks/README.md` for the publication workflow. Do not add heuristic placeholders or data-specific exceptions to make invalid benchmark records pass.
+
+## Maintainer workflow
+
+Read root `CONTRIBUTING.md` before publishing benchmark changes. Keep numbers repeated in the root README consistent with `benchmarks/published.json` and its evidence. Prose edits alone do not update the website. Do not configure a personal token per maintainer or change another project's results. The organization administrator owns the publishing credential; project reviewers own measurement quality.
