@@ -39,12 +39,20 @@
       "candidate_rss": 30.058
     },
     {
-      "dataset": "Two-pass · 535.7M reads",
+      "dataset": "Two-pass Single-end· 535.7M reads",
       "resources": "32 threads",
       "baseline_seconds": 1644.326,
-      "candidate_seconds": 1562.513,
+      "candidate_seconds": 1212.230,
       "baseline_rss": 49.496,
-      "candidate_rss": 40.732
+      "candidate_rss": 40.929
+    },
+    {
+      "dataset": "Two-pass Paired-end· 535.7M reads",
+      "resources": "32 threads",
+      "baseline_seconds": 4241.699,
+      "candidate_seconds": 2926.378,
+      "baseline_rss": 50.198,
+      "candidate_rss": 41.421
     },
     {
       "dataset": "Solo counting · 66.6M RNA/barcode pairs",
