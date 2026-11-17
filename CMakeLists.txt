@@ -83,7 +83,7 @@ target_link_libraries(nustar_sj PUBLIC nustar_contracts)
 add_library(nustar_stats STATIC statistics/star_statistics.cpp)
 target_link_libraries(nustar_stats PUBLIC nustar_contracts)
 add_subdirectory(third_party/htslib)
-add_library(nustar_bam STATIC bam/codec.cpp bam/source.cpp bam/sink.cpp)
+add_library(nustar_bam STATIC bam/codec.cpp bam/source.cpp bam/sink.cpp bam/sort.cpp bam/bgzf_writer.cpp)
 target_link_libraries(nustar_bam PUBLIC nustar_output nustar_hts)
 
 add_library(nustar_output STATIC output/file_sink.cpp)

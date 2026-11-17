@@ -110,6 +110,20 @@ def main():
                 assert a[2]==b[2],(case,'equal-coordinate tie order')
         if solo:same_solo(work/f'native-{case}.Solo.out',work/f'star-{case}.Solo.out')
         assert not (work/f'native-{case}._NuSTARbamtmp').exists()
+        # Exercise the production sorter as well as the tiny-budget legacy
+        # path above. Coordinate-only output enables concurrent submissions.
+        fastargs=list(args)
+        fastargs[fastargs.index('--genomeDir')+1]=fixtures/'native-index'
+        fastargs[fastargs.index('--limitBAMsortRAM')+1]=8<<20
+        fastargs[fastargs.index('--outFileNamePrefix')+1]=str(work/f'native-fast-{case}')+'.'
+        fastargs.remove('Unsorted')
+        if name=='profile':fastargs+=['--profile-stages']
+        run(binary,fastargs,'native-fast-'+case)
+        a=decode(work/f'native-fast-{case}.Aligned.sortedByCoord.out.bam')
+        b=decode(work/f'star-{case}.Aligned.sortedByCoord.out.bam')
+        assert a[1:]==b[1:],(case,'fast sorter exact records/ties')
+        if solo:same_solo(work/f'native-fast-{case}.Solo.out',work/f'star-{case}.Solo.out')
+        assert not (work/f'native-fast-{case}._NuSTARbamtmp').exists()
         passed.append(case);print('PASS',case,flush=True)
     # Use exactly the same records for native BAM input and STAR SAM input. This
     # exercises reverse strands, secondary records, unmapped reads and aux tags.

@@ -1,6 +1,7 @@
 #include "../third_party/htslib/htslib/bgzf.h"
 #include "codec.hpp"
 #include "io.hpp"
+#include "sort.hpp"
 #include <algorithm>
 #include <fstream>
 #include <queue>
@@ -68,6 +69,7 @@ class Sink final : public IOutputSink {
     std::vector<Record> records_;
     std::uint64_t memory_ = 0, serial_ = 0;
     std::vector<std::filesystem::path> runs_;
+    std::unique_ptr<bam::CoordinateSorter> sorter_;
     Bgzf open(const std::string& path) {
         Bgzf file(bgzf_open(
             path.c_str(),
@@ -134,6 +136,15 @@ class Sink final : public IOutputSink {
             if (!std::filesystem::create_directory(temporary_))
                 throw std::runtime_error("BAM temporary directory already exists: " +
                                          temporary_.string());
+            if (config_.sort_memory >= (8ULL << 20)) {
+                try {
+                    sorter_ = std::make_unique<bam::CoordinateSorter>(temporary_, config_.sort_memory,
+                                                                     config_.threads);
+                } catch (...) {
+                    std::filesystem::remove_all(temporary_);
+                    throw;
+                }
+            }
         }
     }
     ~Sink() override {
@@ -195,6 +206,12 @@ class Sink final : public IOutputSink {
     }
     Status submit(OutputBatch&& output) override {
         try {
+            if (sorter_) {
+                if (unsorted_)
+                    for (const auto& fragment : output.fragments) write(unsorted_.get(), fragment.sam);
+                sorter_->submit(output);
+                return std::monostate{};
+            }
             for (const auto& fragment : output.fragments) {
                 if (unsorted_)
                     write(unsorted_.get(), fragment.sam);
@@ -210,10 +227,8 @@ class Sink final : public IOutputSink {
                     memory_ += n + sizeof(Record) * 2;
                     records_.push_back(std::move(r));
                     offset += n;
-                    // Keep sorting records from inflating the mapping peak. The
-                    // user budget is an upper bound, not a reservation.
-                    if (memory_ >= std::min<std::uint64_t>(config_.sort_memory,
-                                                           (8ULL << 20) * config_.threads))
+                    // Compatibility path for tiny budgets only.
+                    if (memory_ >= config_.sort_memory)
                         flushRun();
                 }
             }
@@ -222,8 +237,12 @@ class Sink final : public IOutputSink {
             return Failure{ErrorKind::Io, Stage::Commit, {}, 1, e.what()};
         }
     }
+    bool concurrentWrites() const noexcept override {
+        return sorter_ && !config_.unsorted;
+    }
     Status finish(std::span<const std::byte> sj, const WorkerStatistics& statistics) override {
         try {
+            if (sorter_) sorter_->finish();
             close(unsorted_);
             return auxiliary_->finish(sj, statistics);
         } catch (const std::exception& e) {
@@ -234,6 +253,11 @@ class Sink final : public IOutputSink {
         try {
             if (!config_.coordinate)
                 return std::monostate{};
+            if (sorter_) {
+                sorter_->writeBam(prefix_ + "Aligned.sortedByCoord.out.bam", header_,
+                                  config_.compression, correction_);
+                return std::monostate{};
+            }
             auto sorted = open(prefix_ + "Aligned.sortedByCoord.out.bam");
             write(sorted.get(), header_);
             auto emit = [&](Record& record) {
@@ -281,7 +305,10 @@ class Sink final : public IOutputSink {
             return Failure{ErrorKind::Io, Stage::Finish, {}, 1, e.what()};
         }
     }
-    void cancel() noexcept override { auxiliary_->cancel(); }
+    void cancel() noexcept override {
+        if (sorter_) sorter_->cancel();
+        auxiliary_->cancel();
+    }
 };
 } // namespace
 Result<std::unique_ptr<IOutputSink>> openBamSink(const OutputFiles& files, const BamConfig& config,

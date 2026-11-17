@@ -1,6 +1,14 @@
 # Included from the project root; paths and binary names remain root-relative.
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_executable(bam_sort_test tests/bam/sort.cpp)
+    target_link_libraries(bam_sort_test PRIVATE nustar_bam)
+    add_test(NAME bam_sort_test COMMAND bam_sort_test ${CMAKE_CURRENT_BINARY_DIR}/bam-sort-test)
+    add_executable(bam_io_test tests/bam/io.cpp)
+    target_link_libraries(bam_io_test PRIVATE nustar_bam)
+    add_test(NAME bam_io_test COMMAND bam_io_test ${CMAKE_CURRENT_BINARY_DIR}/bam-io-test)
+    add_executable(bam-sort-replay tools/benchmark/bam_sort_replay.cpp)
+    target_link_libraries(bam-sort-replay PRIVATE nustar_bam)
     add_executable(selection_contract_test tests/selection/contracts.cpp)
     target_link_libraries(selection_contract_test PRIVATE nustar_single_pipeline
         nustar_paired_pipeline nustar_defaults nustar_input)

@@ -19,8 +19,8 @@ Single-end alignment, paired-end alignment, and paired overlap refinement use th
 | Paired overlap refinement | 1904.047 s / 34.852 GiB | 1488.024 s / 30.058 GiB | passed |
 | Two-pass single-end mapping | 1644.442 s / 49.492 GiB | 1212.230 s / 40.929 GiB | passed |
 | Two-pass paired-end mapping | 4241.699 s / 50.198 GiB | 2926.378 s / 41.421 GiB | passed |
-| Coordinate-sorted BAM, single-end | 934.660 s / 100.734 GiB | 1555.086 s / 30.037 GiB | passed |
-| Coordinate-sorted BAM, paired-end | 3326.571 s / 99.876 GiB | 3270.033 s / 30.138 GiB | passed |
+| Coordinate-sorted BAM, single-end | 926.828 s / 100.798 GiB | 751.109 s / 75.024 GiB | passed |
+| Coordinate-sorted BAM, paired-end | 3408.854 s / 97.904 GiB | 1774.513 s / 61.716 GiB | passed |
 | Solo counting | 118.887 s / 35.939 GiB | 81.207 s / 31.780 GiB | passed |
 
 Output checks will report whether alignment records and tags, junctions, mapping statistics, and Solo matrices match. File-byte equality will be reported separately from decoded-record equality.
