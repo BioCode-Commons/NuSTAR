@@ -55,6 +55,22 @@
       "candidate_rss": 41.421
     },
     {
+      "dataset": "Single-end with Sorted BAM· 535.7M reads",
+      "resources": "32 threads",
+      "baseline_seconds": 926.828,
+      "candidate_seconds": 751.109,
+      "baseline_rss": 100.798,
+      "candidate_rss": 75.024
+    },
+    {
+      "dataset": "Paired-end with Sorted BAM· 535.7M reads",
+      "resources": "32 threads",
+      "baseline_seconds": 3408.854,
+      "candidate_seconds": 1774.513,
+      "baseline_rss": 97.904,
+      "candidate_rss": 61.716
+    },
+    {
       "dataset": "Solo counting · 66.6M RNA/barcode pairs",
       "resources": "32 threads",
       "baseline_seconds": 121.487,
